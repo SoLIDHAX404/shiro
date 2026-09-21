@@ -31,6 +31,9 @@ repositories {
     // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html
     // for more information about repositories.
+    mavenCentral()
+    maven("https://jitpack.io/") // Commodore
+    maven("https://maven.starred.foo/releases") // Cascade
 }
 
 dependencies {
@@ -40,6 +43,14 @@ dependencies {
     implementation("net.fabricmc:fabric-language-kotlin:${project.property("kotlin_loader_version")}")
 
     implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+
+    // Commodore: Kotlin DSL for Brigadier commands (plain library, bundled via jar-in-jar)
+    implementation("com.github.Stivais:Commodore:${project.property("commodore_version")}")
+    include("com.github.Stivais:Commodore:${project.property("commodore_version")}")
+
+    // Cascade: UI and font rendering engine (bundled via jar-in-jar)
+    implementation("foo.starred:cascade:${project.property("cascade_version")}+${project.property("minecraft_version")}")
+    include("foo.starred:cascade:${project.property("cascade_version")}+${project.property("minecraft_version")}")
 }
 
 tasks.processResources {
@@ -69,6 +80,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.fromTarget(targetJavaVersion.toString()))
+    // Required by Commodore so lambda parameter types can be reflected at runtime
+    compilerOptions.freeCompilerArgs.add("-Xlambdas=class")
 }
 
 tasks.jar {
