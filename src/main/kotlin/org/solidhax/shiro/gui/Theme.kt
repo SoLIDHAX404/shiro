@@ -7,6 +7,10 @@ data class Theme(
     val headerTint: CascadeGeometricColor,
     val border: CascadeGeometricColor,
     val text: CascadeGeometricColor,
+    val textMuted: CascadeGeometricColor,
+    val entrySelected: Int,
+    val entryHovered: Int,
+    val accent: Int,
     val divider: Int,
     val shadow: Int
 ) {
@@ -16,6 +20,10 @@ data class Theme(
             headerTint = CascadeGeometricColor.vertical(0x14FFFFFF, 0x0AFFFFFF),
             border = CascadeGeometricColor.vertical(0x24FFFFFF, 0x0AFFFFFF),
             text = CascadeGeometricColor(0xFFE6E6E6.toInt()),
+            textMuted = CascadeGeometricColor(0xFF8C8D90.toInt()),
+            entrySelected = 0x14FFFFFF,
+            entryHovered = 0x0AFFFFFF,
+            accent = 0xFF9A86F2.toInt(),
             divider = 0x14FFFFFF,
             shadow = 0x26000000
         )

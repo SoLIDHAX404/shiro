@@ -13,15 +13,21 @@ import org.solidhax.shiro.gui.ClickGUI.theme
 
 class Panel(private val title: String) {
 
+    private val sidebar = Sidebar()
     private val titleWidth by lazy { font.width(title, TITLE_SIZE) }
 
-    fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float) {
+    fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, mouseX: Float, mouseY: Float) {
         graphics.dropShadow(x, y, WIDTH, HEIGHT, CascadeGeometricOffset(0f, 2f), 10f, 0f, theme.shadow, ALL_CORNERS)
         graphics.blur(x, y, WIDTH, HEIGHT, theme.panelTint, ALL_CORNERS, 30f)
 
         drawHeader(graphics, x, y)
+        sidebar.draw(graphics, x, y + HEADER_HEIGHT + 1f, mouseX, mouseY)
 
         graphics.hollowRectangle(x, y, WIDTH, HEIGHT, 1f, theme.border, ALL_CORNERS)
+    }
+
+    fun mouseClicked(mouseX: Float, mouseY: Float, button: Int): Boolean {
+        return sidebar.mouseClicked(mouseX, mouseY, button)
     }
 
     private fun drawHeader(graphics: GuiGraphicsExtractor, x: Float, y: Float) {
