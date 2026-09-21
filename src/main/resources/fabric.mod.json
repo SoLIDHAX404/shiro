@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "shiro",
+  "version": "${version}",
+  "name": "shiro",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "BSD-3-Clause",
+  "icon": "assets/shiro/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "org.solidhax.shiro.client.ShiroClient"
+    ],
+    "main": [
+      "org.solidhax.shiro.Shiro"
+    ]
+  },
+  "mixins": [
+    "shiro.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-language-kotlin": ">=${kotlin_loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
