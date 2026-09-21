@@ -11,10 +11,10 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "org.solidhax.shiro.client.ShiroClient"
-    ],
-    "main": [
-      "org.solidhax.shiro.Shiro"
+      {
+        "adapter": "kotlin",
+        "value": "org.solidhax.shiro.Shiro"
+      }
     ]
   },
   "mixins": [

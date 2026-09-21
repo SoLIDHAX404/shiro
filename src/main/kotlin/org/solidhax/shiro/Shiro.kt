@@ -1,9 +1,8 @@
 package org.solidhax.shiro
 
-import net.fabricmc.api.ModInitializer
+import net.fabricmc.api.ClientModInitializer
 
-class Shiro : ModInitializer {
-
-    override fun onInitialize() {
+object Shiro : ClientModInitializer {
+    override fun onInitializeClient() {
     }
 }
