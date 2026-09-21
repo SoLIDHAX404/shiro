@@ -1,27 +1,21 @@
 package org.solidhax.shiro.gui
 
-import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
-import foo.starred.cascade.graphics.geometry.CascadeGeometricRadius
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
 object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
 
-    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
-        super.extractRenderState(graphics, mouseX, mouseY, a)
+    var theme = Theme.DEFAULT
 
-        val panelWidth = 200f
-        val panelHeight = 120f
+    private val panel = Panel("shiro")
 
-        graphics.roundedRectangle(
-            (width - panelWidth) / 2f,
-            (height - panelHeight) / 2f,
-            panelWidth,
-            panelHeight,
-            0xE01E1E2E.toInt(),
-            CascadeGeometricRadius(10f)
-        )
+    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
+        panel.draw(graphics, (width - Panel.WIDTH) / 2f, (height - Panel.HEIGHT) / 2f)
+        super.extractRenderState(graphics, mouseX, mouseY, deltaTicks)
     }
 
+    override fun extractBlurredBackground(graphics: GuiGraphicsExtractor) {}
+    override fun extractMenuBackground(graphics: GuiGraphicsExtractor) {}
+    override fun isPauseScreen(): Boolean = false
 }

@@ -6,6 +6,6 @@ import org.solidhax.shiro.gui.ClickGUI
 
 val mainCommand = Commodore("shiro") {
     runs {
-        mc.schedule { mc.setScreenAndShow(ClickGUI) }
+        mc.schedule { mc.gui.setScreen(ClickGUI) }
     }
 }
