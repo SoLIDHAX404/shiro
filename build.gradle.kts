@@ -16,7 +16,8 @@ base {
 
 val targetJavaVersion = 25
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    // Build and run on JDK 26, but compile to Java 25 bytecode (see targetJavaVersion)
+    toolchain.languageVersion = JavaLanguageVersion.of(26)
     // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
     // if it is present.
     // If you remove this line, sources will not be generated.
