@@ -14,6 +14,7 @@ import org.solidhax.shiro.gui.ClickGUI.theme
 class Panel(private val title: String) {
 
     private val sidebar = Sidebar()
+    private val profilePage = ProfilePage()
     private val titleWidth by lazy { font.width(title, TITLE_SIZE) }
 
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, mouseX: Float, mouseY: Float) {
@@ -22,12 +23,28 @@ class Panel(private val title: String) {
 
         drawHeader(graphics, x, y)
         sidebar.draw(graphics, x, y + HEADER_HEIGHT + 1f, mouseX, mouseY)
+        if (sidebar.profileOpen) {
+            profilePage.draw(graphics, x + Sidebar.WIDTH + 1f, y + HEADER_HEIGHT + 1f, CONTENT_WIDTH, Sidebar.HEIGHT)
+        }
 
         graphics.hollowRectangle(x, y, WIDTH, HEIGHT, 1f, theme.border, ALL_CORNERS)
     }
 
-    fun mouseClicked(mouseX: Float, mouseY: Float, button: Int): Boolean {
-        return sidebar.mouseClicked(mouseX, mouseY, button)
+    fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
+        if (sidebar.mouseClicked(mouseX, mouseY, button)) return true
+        return sidebar.profileOpen && profilePage.mouseClicked(mouseX, mouseY, button, doubleClick)
+    }
+
+    fun mouseDragged(button: Int, deltaX: Float, deltaY: Float): Boolean {
+        return sidebar.profileOpen && profilePage.mouseDragged(button, deltaX, deltaY)
+    }
+
+    fun mouseReleased(button: Int) {
+        profilePage.mouseReleased(button)
+    }
+
+    fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean {
+        return sidebar.profileOpen && profilePage.mouseScrolled(mouseX, mouseY, amount)
     }
 
     private fun drawHeader(graphics: GuiGraphicsExtractor, x: Float, y: Float) {
@@ -49,6 +66,7 @@ class Panel(private val title: String) {
         const val HEADER_HEIGHT = 30f
         const val BODY_HEIGHT = 300f
         const val HEIGHT = HEADER_HEIGHT + BODY_HEIGHT
+        const val CONTENT_WIDTH = WIDTH - Sidebar.WIDTH - 1f
 
         private const val RADIUS = 4f
         private const val TITLE_SIZE = 10f

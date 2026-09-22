@@ -1,5 +1,6 @@
 package org.solidhax.shiro.gui
 
+import com.mojang.blaze3d.platform.InputConstants
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.solid.rectangle
 import foo.starred.cascade.graphics.extensions.scissor.scissor
@@ -15,6 +16,11 @@ class Sidebar {
     var selected: Category = Category.categories.values.first()
         private set
 
+    var profileOpen = false
+        private set
+
+    private val profileBadge = ProfileBadge(ENTRY_WIDTH)
+
     private var x = 0f
     private var y = 0f
 
@@ -27,13 +33,10 @@ class Sidebar {
         Category.categories.values.forEachIndexed { index, category ->
             val entryX = x + PADDING
             val entryY = entryY(index)
-            val isSelected = category == selected
+            val isSelected = !profileOpen && category == selected
 
             if (isSelected) {
-                graphics.roundedRectangle(entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT, theme.entrySelected, ENTRY_CORNERS)
-                graphics.scissor(entryX + ENTRY_WIDTH - ACCENT_WIDTH, entryY, ACCENT_WIDTH, ENTRY_HEIGHT) {
-                    graphics.roundedRectangle(entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT, theme.accent, ENTRY_CORNERS)
-                }
+                graphics.selectionHighlight(entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT)
             } else if (isAreaHovered(mouseX, mouseY, entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT)) {
                 graphics.roundedRectangle(entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT, theme.entryHovered, ENTRY_CORNERS)
             }
@@ -47,14 +50,23 @@ class Sidebar {
                 size = TEXT_SIZE
             )
         }
+
+        val badgeHovered = isAreaHovered(mouseX, mouseY, x + PADDING, badgeY, ENTRY_WIDTH, ProfileBadge.HEIGHT)
+        profileBadge.draw(graphics, x + PADDING, badgeY, profileOpen, badgeHovered)
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, button: Int): Boolean {
-        if (button != 0) return false
+        if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
+
+        if (isAreaHovered(mouseX, mouseY, x + PADDING, badgeY, ENTRY_WIDTH, ProfileBadge.HEIGHT)) {
+            profileOpen = true
+            return true
+        }
 
         Category.categories.values.forEachIndexed { index, category ->
             if (isAreaHovered(mouseX, mouseY, x + PADDING, entryY(index), ENTRY_WIDTH, ENTRY_HEIGHT)) {
                 selected = category
+                profileOpen = false
                 return true
             }
         }
@@ -62,6 +74,8 @@ class Sidebar {
     }
 
     private fun entryY(index: Int): Float = y + PADDING + index * (ENTRY_HEIGHT + SPACING)
+
+    private val badgeY get() = y + HEIGHT - PADDING - ProfileBadge.HEIGHT
 
     companion object {
         const val WIDTH = 110f
@@ -78,5 +92,12 @@ class Sidebar {
         private val ENTRY_CORNERS = CascadeGeometricRadius(4f)
 
         private val font get() = CascadeFonts.sans
+
+        fun GuiGraphicsExtractor.selectionHighlight(x: Float, y: Float, width: Float, height: Float) {
+            roundedRectangle(x, y, width, height, theme.entrySelected, ENTRY_CORNERS)
+            scissor(x + width - ACCENT_WIDTH, y, ACCENT_WIDTH, height) {
+                roundedRectangle(x, y, width, height, theme.accent, ENTRY_CORNERS)
+            }
+        }
     }
 }

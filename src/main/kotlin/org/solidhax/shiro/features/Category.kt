@@ -8,7 +8,11 @@ data class Category private constructor(val name: String) {
         @JvmField
         val GENERAL = custom("General")
         @JvmField
-        val RENDER = custom("Render")
+        val MINING = custom("Mining")
+        @JvmField
+        val FARMING = custom("Farming")
+        @JvmField
+        val FISHING = custom("Fishing")
         @JvmField
         val MISC = custom("Misc")
 

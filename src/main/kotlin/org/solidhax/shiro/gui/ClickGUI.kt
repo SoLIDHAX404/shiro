@@ -18,8 +18,23 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
     }
 
     override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
-        if (panel.mouseClicked(event.x().toFloat(), event.y().toFloat(), event.button())) return true
+        if (panel.mouseClicked(event.x().toFloat(), event.y().toFloat(), event.button(), doubleClick)) return true
         return super.mouseClicked(event, doubleClick)
+    }
+
+    override fun mouseDragged(event: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
+        if (panel.mouseDragged(event.button(), deltaX.toFloat(), deltaY.toFloat())) return true
+        return super.mouseDragged(event, deltaX, deltaY)
+    }
+
+    override fun mouseReleased(event: MouseButtonEvent): Boolean {
+        panel.mouseReleased(event.button())
+        return super.mouseReleased(event)
+    }
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        if (panel.mouseScrolled(mouseX.toFloat(), mouseY.toFloat(), verticalAmount.toFloat())) return true
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)
     }
 
     override fun extractBlurredBackground(graphics: GuiGraphicsExtractor) {}
