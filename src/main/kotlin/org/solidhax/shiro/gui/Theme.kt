@@ -12,6 +12,16 @@ data class Theme(
     val entryHovered: Int,
     val accent: Int,
     val card: Int,
+    val settingCard: Int,
+    val settingCardHovered: Int,
+    val control: Int,
+    val controlHovered: Int,
+    val textSelection: Int,
+    val scrollbar: Int,
+    val scrollbarHovered: Int,
+    val sliderTrack: Int,
+    val sliderTrackHovered: Int,
+    val sliderFill: Int,
     val divider: Int,
     val shadow: Int
 ) {
@@ -26,6 +36,16 @@ data class Theme(
             entryHovered = 0x0AFFFFFF,
             accent = 0xFF9A86F2.toInt(),
             card = 0x33000000,
+            settingCard = 0x0AFFFFFF,
+            settingCardHovered = 0x14FFFFFF,
+            control = 0x1AFFFFFF,
+            controlHovered = 0x26FFFFFF,
+            textSelection = 0x809A86F2.toInt(),
+            scrollbar = 0x26FFFFFF,
+            scrollbarHovered = 0x40FFFFFF,
+            sliderTrack = 0x14FFFFFF,
+            sliderTrackHovered = 0x1FFFFFFF,
+            sliderFill = 0xFF9A86F2.toInt(),
             divider = 0x14FFFFFF,
             shadow = 0x26000000
         )

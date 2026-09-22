@@ -3,7 +3,6 @@ package org.solidhax.shiro.gui
 import com.mojang.blaze3d.platform.InputConstants
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.solid.rectangle
-import foo.starred.cascade.graphics.extensions.scissor.scissor
 import foo.starred.cascade.graphics.font.CascadeFonts
 import foo.starred.cascade.graphics.geometry.CascadeGeometricRadius
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -85,7 +84,6 @@ class Sidebar {
         private const val SPACING = 3f
         private const val ENTRY_WIDTH = WIDTH - PADDING * 2f
         private const val ENTRY_HEIGHT = 22f
-        private const val ACCENT_WIDTH = 2f
         private const val TEXT_INSET = 8f
         private const val TEXT_SIZE = 8f
 
@@ -97,9 +95,7 @@ class Sidebar {
 
         fun GuiGraphicsExtractor.selectionHighlight(x: Float, y: Float, width: Float, height: Float) {
             roundedRectangle(x, y, width, height, theme.entrySelected, ENTRY_CORNERS)
-            scissor(x + width - ACCENT_WIDTH, y, ACCENT_WIDTH, height) {
-                roundedRectangle(x, y, width, height, theme.accent, ENTRY_CORNERS)
-            }
+            accentEdge(x, y, width, height, ENTRY_CORNERS, left = false)
         }
     }
 }

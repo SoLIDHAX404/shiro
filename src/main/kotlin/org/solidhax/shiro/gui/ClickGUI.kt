@@ -2,6 +2,8 @@ package org.solidhax.shiro.gui
 
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.input.CharacterEvent
+import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import kotlin.math.floor
@@ -23,7 +25,7 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
     }
 
     override fun mouseDragged(event: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
-        if (panel.mouseDragged(event.button(), deltaX.toFloat(), deltaY.toFloat())) return true
+        if (panel.mouseDragged(event.x().toFloat(), event.button(), deltaX.toFloat(), deltaY.toFloat())) return true
         return super.mouseDragged(event, deltaX, deltaY)
     }
 
@@ -35,6 +37,21 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         if (panel.mouseScrolled(mouseX.toFloat(), mouseY.toFloat(), verticalAmount.toFloat())) return true
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)
+    }
+
+    override fun charTyped(event: CharacterEvent): Boolean {
+        if (panel.charTyped(event)) return true
+        return super.charTyped(event)
+    }
+
+    override fun keyPressed(event: KeyEvent): Boolean {
+        if (panel.keyPressed(event)) return true
+        return super.keyPressed(event)
+    }
+
+    override fun removed() {
+        panel.unfocus()
+        super.removed()
     }
 
     override fun extractBlurredBackground(graphics: GuiGraphicsExtractor) {}
