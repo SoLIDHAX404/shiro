@@ -35,7 +35,7 @@ class Panel(private val title: String) {
         val contentY = y + HEADER_HEIGHT + 1f
         val module = openModule
         when {
-            sidebar.profileOpen -> profilePage.draw(graphics, contentX, contentY, CONTENT_WIDTH, CONTENT_HEIGHT)
+            sidebar.profileOpen -> profilePage.draw(graphics, contentX, contentY, CONTENT_WIDTH, CONTENT_HEIGHT, mouseX, mouseY)
             module != null -> settingsPage.draw(graphics, module, contentX, contentY, CONTENT_WIDTH, CONTENT_HEIGHT, mouseX, mouseY)
             else -> moduleList.draw(graphics, sidebar.selected, contentX, contentY, CONTENT_WIDTH, CONTENT_HEIGHT, mouseX, mouseY)
         }
@@ -45,6 +45,7 @@ class Panel(private val title: String) {
 
     fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
         if (sidebar.mouseClicked(mouseX, mouseY, button)) {
+            unfocus()
             closeSettings()
             return true
         }
@@ -56,7 +57,7 @@ class Panel(private val title: String) {
     }
 
     fun mouseDragged(mouseX: Float, button: Int, deltaX: Float, deltaY: Float): Boolean = when {
-        sidebar.profileOpen -> profilePage.mouseDragged(button, deltaX, deltaY)
+        sidebar.profileOpen -> profilePage.mouseDragged(mouseX, button, deltaX, deltaY)
         openModule != null -> settingsPage.mouseDragged(mouseX, deltaY)
         else -> moduleList.mouseDragged(deltaY)
     }
@@ -79,12 +80,21 @@ class Panel(private val title: String) {
         openModule = module
     }
 
-    fun charTyped(event: CharacterEvent): Boolean = openModule != null && settingsPage.charTyped(event)
+    fun charTyped(event: CharacterEvent): Boolean = when {
+        sidebar.profileOpen -> profilePage.charTyped(event)
+        openModule != null -> settingsPage.charTyped(event)
+        else -> false
+    }
 
-    fun keyPressed(event: KeyEvent): Boolean = openModule != null && settingsPage.keyPressed(event)
+    fun keyPressed(event: KeyEvent): Boolean = when {
+        sidebar.profileOpen -> profilePage.keyPressed(event)
+        openModule != null -> settingsPage.keyPressed(event)
+        else -> false
+    }
 
     fun unfocus() {
         settingsPage.unfocus()
+        profilePage.unfocus()
     }
 
     private fun closeSettings() {
