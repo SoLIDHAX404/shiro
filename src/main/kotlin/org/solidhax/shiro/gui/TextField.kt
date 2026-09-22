@@ -12,6 +12,8 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.util.Util
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.ui.animation.Animation
+import org.solidhax.shiro.utils.ui.animation.Easing
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -29,6 +31,7 @@ class TextField(
     private var anchor = 0
     private var scroll = 0f
     private var blinkStart = 0L
+    private val cursorAnimation = Animation(CURSOR_DURATION, Easing.EASE_OUT)
     private var x = 0f
     private var width = 0f
 
@@ -63,8 +66,9 @@ class TextField(
                 font.extract(graphics, text, textX, textY, theme.text, shadow = false, size = TEXT_SIZE)
             }
 
+            val animatedCursor = cursorAnimation.animateTo(cursorOffset)
             if (focused && (Util.getMillis() - blinkStart) % (BLINK_MS * 2) < BLINK_MS) {
-                graphics.roundedRectangle(textX + cursorOffset, textY - 2f, CURSOR_WIDTH, TEXT_SIZE + 4f, theme.text, CURSOR_CORNERS)
+                graphics.roundedRectangle(textX + animatedCursor - CURSOR_OFFSET, textY, CURSOR_WIDTH, TEXT_SIZE, theme.text, CURSOR_CORNERS)
             }
         }
     }
@@ -131,6 +135,7 @@ class TextField(
     private fun focus() {
         if (focused) return
         focused = true
+        cursorAnimation.set(widthOf(getText(), cursor))
         mc.textInputManager().startTextInput(this)
     }
 
@@ -180,10 +185,12 @@ class TextField(
     companion object {
         const val HEIGHT = 15f
 
-        private const val PADDING = 6f
+        private const val PADDING = 5f
         private const val TEXT_SIZE = 8f
         private const val BLINK_MS = 500L
         private const val CURSOR_WIDTH = 1f
+        private const val CURSOR_OFFSET = 1f
+        private const val CURSOR_DURATION = 80L
 
         private val CORNERS = CascadeGeometricRadius(3f)
         private val SELECTION_CORNERS = CascadeGeometricRadius(1f)

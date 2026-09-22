@@ -9,18 +9,18 @@ import foo.starred.cascade.graphics.states.impl.image.data.CascadeImageFilter
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.resources.Identifier
 import org.solidhax.shiro.gui.ClickGUI.theme
-import org.solidhax.shiro.gui.Sidebar.Companion.selectionHighlight
 import org.solidhax.shiro.utils.displayName
+import org.solidhax.shiro.utils.ui.animation.Animation
+import org.solidhax.shiro.utils.ui.lerpColor
 import org.solidhax.shiro.utils.skinTexture
 
 class ProfileBadge(private val width: Float) {
 
-    fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, active: Boolean, hovered: Boolean) {
-        if (active) {
-            graphics.selectionHighlight(x, y, width, HEIGHT)
-        } else if (hovered) {
-            graphics.roundedRectangle(x, y, width, HEIGHT, theme.entrySelected, CORNERS)
-        }
+    private val hoverAnimation = Animation(HOVER_DURATION)
+
+    fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, hovered: Boolean) {
+        val hover = hoverAnimation.animate(hovered)
+        if (hover > 0f) graphics.roundedRectangle(x, y, width, HEIGHT, lerpColor(0, theme.entryHovered, hover), CORNERS)
 
         val faceX = x + INSET
         val faceY = y + (HEIGHT - FACE_SIZE) / 2f
@@ -55,6 +55,8 @@ class ProfileBadge(private val width: Float) {
         private const val HAT_U1 = 48f / 64f
         private const val FACE_V0 = 8f / 64f
         private const val FACE_V1 = 16f / 64f
+
+        private const val HOVER_DURATION = 120L
 
         private val CORNERS = CascadeGeometricRadius(4f)
         private val FACE_CORNERS = CascadeGeometricRadius(3f)

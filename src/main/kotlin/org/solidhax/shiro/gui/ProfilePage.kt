@@ -13,6 +13,7 @@ import org.joml.Quaternionf
 import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.ui.animation.AnimationManager
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import kotlin.math.PI
 import kotlin.math.pow
@@ -23,7 +24,6 @@ class ProfilePage {
     private var pitch = 0f
     private var zoom = 1f
     private var dragging = false
-    private var lastFrame = Util.getMillis()
     private var lastInteraction = 0L
 
     private var cardX = 0f
@@ -85,9 +85,7 @@ class ProfilePage {
 
     private fun idleSpin() {
         val now = Util.getMillis()
-        val deltaSeconds = ((now - lastFrame) / 1000f).coerceAtMost(MAX_FRAME_SECONDS)
-        lastFrame = now
-        if (!dragging && now - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * deltaSeconds
+        if (!dragging && now - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * AnimationManager.deltaSeconds
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
@@ -140,7 +138,6 @@ class ProfilePage {
         private const val ROTATE_SPEED = 1.2f
         private const val SPIN_SPEED = 20f
         private const val IDLE_DELAY_MS = 2000L
-        private const val MAX_FRAME_SECONDS = 0.1f
         private const val MAX_PITCH = 80f
         private const val ZOOM_STEP = 1.1f
         private const val MIN_ZOOM = 0.5f

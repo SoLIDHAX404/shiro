@@ -23,7 +23,9 @@ import org.solidhax.shiro.gui.settings.impl.NumberSetting
 import org.solidhax.shiro.gui.settings.impl.RangeSetting
 import org.solidhax.shiro.gui.settings.impl.SelectorSetting
 import org.solidhax.shiro.gui.settings.impl.StringSetting
+import org.solidhax.shiro.utils.ui.animation.Animation
 import org.solidhax.shiro.utils.ui.isAreaHovered
+import org.solidhax.shiro.utils.ui.lerpColor
 import org.solidhax.shiro.utils.ui.svgTexture
 import kotlin.math.PI
 
@@ -31,6 +33,8 @@ class SettingsPage(private val onBack: () -> Unit) {
 
     private val scrollbar = Scrollbar()
     private val textFields = HashMap<StringSetting, TextField>()
+    private val hoverAnimations = HashMap<Setting<*>, Animation>()
+    private val stateAnimations = HashMap<Setting<*>, Animation>()
 
     private var x = 0f
     private var y = 0f
@@ -152,8 +156,9 @@ class SettingsPage(private val onBack: () -> Unit) {
         val hovered = isAreaHovered(mouseX, mouseY, cardX, cardY, cardWidth, height)
         val clickable = isClickableCard(setting)
         val corners = corners(roundTop, roundBottom)
+        val hover = hoverAnimation(setting).animate(clickable && hovered)
 
-        graphics.roundedRectangle(cardX, cardY, cardWidth, height, if (clickable && hovered) theme.settingCardHovered else theme.settingCard, corners)
+        graphics.roundedRectangle(cardX, cardY, cardWidth, height, lerpColor(theme.settingCard, theme.settingCardHovered, hover), corners)
 
         val textY = if (isSliderSetting(setting)) cardY + INNER_PADDING else cardY + (height - TEXT_SIZE) / 2f
         if (setting !is ActionSetting) {
@@ -162,7 +167,7 @@ class SettingsPage(private val onBack: () -> Unit) {
 
         when (setting) {
             is BooleanSetting ->
-                Checkbox.draw(graphics, contentRight - Checkbox.SIZE, textY + (TEXT_SIZE - Checkbox.SIZE) / 2f, setting.enabled, hovered)
+                Checkbox.draw(graphics, contentRight - Checkbox.SIZE, textY + (TEXT_SIZE - Checkbox.SIZE) / 2f, hovered, stateAnimation(setting).animate(setting.enabled))
 
             is SelectorSetting -> drawValue(graphics, setting.selected, textY, theme.text)
 
@@ -172,14 +177,14 @@ class SettingsPage(private val onBack: () -> Unit) {
                 graphics.image(
                     svgTexture(ModuleButton.CHEVRON, ICON_SIZE.toInt()),
                     iconX, iconY, ICON_SIZE, ICON_SIZE,
-                    color = if (hovered) theme.text else theme.textMuted,
-                    pose = if (setting.enabled) rotation(iconX + ICON_SIZE / 2f, iconY + ICON_SIZE / 2f) else null
+                    color = lerpColor(theme.textMuted, theme.text, hover),
+                    pose = rotation(iconX + ICON_SIZE / 2f, iconY + ICON_SIZE / 2f, stateAnimation(setting).animate(setting.enabled))
                 )
             }
 
             is ActionSetting -> {
                 val labelWidth = font.width(setting.name, TEXT_SIZE)
-                font.extract(graphics, setting.name, cardX + (cardWidth - labelWidth) / 2f, textY, if (hovered) theme.text else theme.textMuted, shadow = false, size = TEXT_SIZE)
+                font.extract(graphics, setting.name, cardX + (cardWidth - labelWidth) / 2f, textY, lerpColor(theme.textMuted, theme.text, hover), shadow = false, size = TEXT_SIZE)
             }
 
             is KeybindSetting -> {
@@ -189,7 +194,7 @@ class SettingsPage(private val onBack: () -> Unit) {
                 val boxX = contentRight - boxWidth
                 val boxY = textY + (TEXT_SIZE - KEY_HEIGHT) / 2f
 
-                graphics.roundedRectangle(boxX, boxY, boxWidth, KEY_HEIGHT, if (hovered) theme.controlHovered else theme.control, KEY_CORNERS)
+                graphics.roundedRectangle(boxX, boxY, boxWidth, KEY_HEIGHT, lerpColor(theme.control, theme.controlHovered, hover), KEY_CORNERS)
                 if (listening == setting) graphics.hollowRectangle(boxX, boxY, boxWidth, KEY_HEIGHT, 1f, theme.accent, KEY_CORNERS)
                 font.extract(graphics, label, boxX + (boxWidth - labelWidth) / 2f, boxY + (KEY_HEIGHT - TEXT_SIZE) / 2f, theme.text, shadow = false, size = TEXT_SIZE)
             }
@@ -246,8 +251,14 @@ class SettingsPage(private val onBack: () -> Unit) {
     private fun keyName(setting: KeybindSetting): String =
         if (setting.value == InputConstants.UNKNOWN) UNBOUND else setting.value.displayName.string
 
-    private fun rotation(centerX: Float, centerY: Float): Matrix3x2f =
-        Matrix3x2f().translate(centerX, centerY).rotate(QUARTER_TURN).translate(-centerX, -centerY)
+    private fun rotation(centerX: Float, centerY: Float, progress: Float): Matrix3x2f? {
+        if (progress <= 0f) return null
+        return Matrix3x2f().translate(centerX, centerY).rotate(QUARTER_TURN * progress).translate(-centerX, -centerY)
+    }
+
+    private fun hoverAnimation(setting: Setting<*>): Animation = hoverAnimations.getOrPut(setting) { Animation(HOVER_DURATION) }
+
+    private fun stateAnimation(setting: Setting<*>): Animation = stateAnimations.getOrPut(setting) { Animation(STATE_DURATION) }
 
     private inline fun forEachCard(module: Module, block: (Setting<*>, Float, Boolean, Boolean) -> Unit) {
         val settings = visibleSettings(module)
@@ -345,6 +356,8 @@ class SettingsPage(private val onBack: () -> Unit) {
         private const val SCROLLBAR_INSET = 4f
         private const val SCROLLBAR_SPACE = 6f
         private const val QUARTER_TURN = (PI / 2.0).toFloat()
+        private const val HOVER_DURATION = 120L
+        private const val STATE_DURATION = 180L
         private const val EMPTY = "This module has no settings."
         private const val LISTENING = "..."
         private const val UNBOUND = "None"

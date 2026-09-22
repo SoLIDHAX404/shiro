@@ -8,7 +8,9 @@ import foo.starred.cascade.graphics.geometry.CascadeGeometricRadius
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import org.solidhax.shiro.features.Category
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.ui.animation.Animation
 import org.solidhax.shiro.utils.ui.isAreaHovered
+import org.solidhax.shiro.utils.ui.lerpColor
 
 class Sidebar {
 
@@ -19,6 +21,10 @@ class Sidebar {
         private set
 
     private val profileBadge = ProfileBadge(ENTRY_WIDTH)
+    private val indicatorY = Animation(SLIDE_DURATION)
+    private val indicatorHeight = Animation(SLIDE_DURATION)
+    private val hoverAnimations = HashMap<Category, Animation>()
+    private var initialized = false
 
     private var x = 0f
     private var y = 0f
@@ -29,15 +35,18 @@ class Sidebar {
 
         graphics.rectangle(x + WIDTH, y, 1f, HEIGHT, theme.divider)
 
+        updateIndicator()
+        graphics.selectionHighlight(x + PADDING, y + indicatorY.value, ENTRY_WIDTH, indicatorHeight.value)
+
         Category.categories.values.forEachIndexed { index, category ->
             val entryX = x + PADDING
             val entryY = entryY(index)
             val isSelected = !profileOpen && category == selected
+            val hovered = !isSelected && isAreaHovered(mouseX, mouseY, entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT)
+            val hover = hoverAnimation(category).animate(hovered)
 
-            if (isSelected) {
-                graphics.selectionHighlight(entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT)
-            } else if (isAreaHovered(mouseX, mouseY, entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT)) {
-                graphics.roundedRectangle(entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT, theme.entryHovered, ENTRY_CORNERS)
+            if (hover > 0f) {
+                graphics.roundedRectangle(entryX, entryY, ENTRY_WIDTH, ENTRY_HEIGHT, lerpColor(0, theme.entryHovered, hover), ENTRY_CORNERS)
             }
 
             font.extract(
@@ -51,7 +60,7 @@ class Sidebar {
         }
 
         val badgeHovered = isAreaHovered(mouseX, mouseY, x + PADDING, badgeY, ENTRY_WIDTH, ProfileBadge.HEIGHT)
-        profileBadge.draw(graphics, x + PADDING, badgeY, profileOpen, badgeHovered)
+        profileBadge.draw(graphics, x + PADDING, badgeY, badgeHovered)
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, button: Int): Boolean {
@@ -72,6 +81,30 @@ class Sidebar {
         return false
     }
 
+    private fun updateIndicator() {
+        val targetY: Float
+        val targetHeight: Float
+        if (profileOpen) {
+            targetY = badgeY - y
+            targetHeight = ProfileBadge.HEIGHT
+        } else {
+            targetY = entryY(Category.categories.values.indexOf(selected)) - y
+            targetHeight = ENTRY_HEIGHT
+        }
+
+        if (initialized) {
+            indicatorY.animateTo(targetY)
+            indicatorHeight.animateTo(targetHeight)
+        } else {
+            indicatorY.set(targetY)
+            indicatorHeight.set(targetHeight)
+            initialized = true
+        }
+    }
+
+    private fun hoverAnimation(category: Category): Animation =
+        hoverAnimations.getOrPut(category) { Animation(HOVER_DURATION) }
+
     private fun entryY(index: Int): Float = y + PADDING + index * (ENTRY_HEIGHT + SPACING)
 
     private val badgeY get() = y + HEIGHT - PADDING - ProfileBadge.HEIGHT
@@ -88,6 +121,9 @@ class Sidebar {
         private const val TEXT_SIZE = 8f
 
         const val TEXT_X = PADDING + TEXT_INSET
+
+        private const val SLIDE_DURATION = 200L
+        private const val HOVER_DURATION = 120L
 
         private val ENTRY_CORNERS = CascadeGeometricRadius(4f)
 
