@@ -52,6 +52,10 @@ dependencies {
     // Cascade: UI and font rendering engine (bundled via jar-in-jar)
     implementation("foo.starred:cascade:${project.property("cascade_version")}+${project.property("minecraft_version")}")
     include("foo.starred:cascade:${project.property("cascade_version")}+${project.property("minecraft_version")}")
+
+    // JSVG: SVG rasterizer Cascade uses for SVGs (Cascade only compiles against it, so we must ship it)
+    implementation("com.github.weisj:jsvg:${project.property("jsvg_version")}")
+    include("com.github.weisj:jsvg:${project.property("jsvg_version")}")
 }
 
 tasks.processResources {

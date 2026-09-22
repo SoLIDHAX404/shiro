@@ -15,7 +15,7 @@ class Panel(private val title: String) {
 
     private val sidebar = Sidebar()
     private val profilePage = ProfilePage()
-    private val titleWidth by lazy { font.width(title, TITLE_SIZE) }
+    private val searchBar = SearchBar()
 
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, mouseX: Float, mouseY: Float) {
         graphics.dropShadow(x, y, WIDTH, HEIGHT, CascadeGeometricOffset(0f, 2f), 10f, 0f, theme.shadow, ALL_CORNERS)
@@ -53,12 +53,14 @@ class Panel(private val title: String) {
 
         font.extract(
             graphics, title,
-            x + (WIDTH - titleWidth) / 2f,
+            x + Sidebar.TEXT_X,
             y + (HEADER_HEIGHT - TITLE_SIZE) / 2f,
             theme.text,
             shadow = false,
             size = TITLE_SIZE
         )
+
+        searchBar.draw(graphics, x + WIDTH - SEARCH_MARGIN - SearchBar.WIDTH, y + (HEADER_HEIGHT - SearchBar.HEIGHT) / 2f)
     }
 
     companion object {
@@ -70,6 +72,7 @@ class Panel(private val title: String) {
 
         private const val RADIUS = 4f
         private const val TITLE_SIZE = 10f
+        private const val SEARCH_MARGIN = 8f
 
         private val ALL_CORNERS = CascadeGeometricRadius(RADIUS)
         private val TOP_CORNERS = CascadeGeometricRadius(RADIUS, RADIUS, 0f, 0f)

@@ -86,8 +86,10 @@ class Sidebar {
         private const val ENTRY_WIDTH = WIDTH - PADDING * 2f
         private const val ENTRY_HEIGHT = 22f
         private const val ACCENT_WIDTH = 2f
-        private const val TEXT_INSET = 10f
-        private const val TEXT_SIZE = 10f
+        private const val TEXT_INSET = 8f
+        private const val TEXT_SIZE = 8f
+
+        const val TEXT_X = PADDING + TEXT_INSET
 
         private val ENTRY_CORNERS = CascadeGeometricRadius(4f)
 

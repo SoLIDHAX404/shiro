@@ -133,7 +133,7 @@ class ProfilePage {
     companion object {
         private const val PADDING = 10f
         private const val HINT_AREA = 14f
-        private const val HINT_SIZE = 9f
+        private const val HINT_SIZE = 8f
         private const val HINT = "Drag to rotate • Scroll to zoom"
 
         private const val BASE_SCALE = 0.4f

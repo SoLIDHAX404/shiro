@@ -16,10 +16,10 @@ import org.solidhax.shiro.utils.skinTexture
 class ProfileBadge(private val width: Float) {
 
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, active: Boolean, hovered: Boolean) {
-        when {
-            active -> graphics.selectionHighlight(x, y, width, HEIGHT)
-            hovered -> graphics.roundedRectangle(x, y, width, HEIGHT, theme.entrySelected, CORNERS)
-            else -> graphics.roundedRectangle(x, y, width, HEIGHT, theme.badge, CORNERS)
+        if (active) {
+            graphics.selectionHighlight(x, y, width, HEIGHT)
+        } else if (hovered) {
+            graphics.roundedRectangle(x, y, width, HEIGHT, theme.entrySelected, CORNERS)
         }
 
         val faceX = x + INSET
@@ -47,7 +47,7 @@ class ProfileBadge(private val width: Float) {
 
         private const val INSET = 6f
         private const val FACE_SIZE = 16f
-        private const val TEXT_SIZE = 10f
+        private const val TEXT_SIZE = 8f
 
         private const val FACE_U0 = 8f / 64f
         private const val FACE_U1 = 16f / 64f

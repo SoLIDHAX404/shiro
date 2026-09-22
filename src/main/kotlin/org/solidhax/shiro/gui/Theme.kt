@@ -11,7 +11,6 @@ data class Theme(
     val entrySelected: Int,
     val entryHovered: Int,
     val accent: Int,
-    val badge: Int,
     val card: Int,
     val divider: Int,
     val shadow: Int
@@ -26,7 +25,6 @@ data class Theme(
             entrySelected = 0x14FFFFFF,
             entryHovered = 0x0AFFFFFF,
             accent = 0xFF9A86F2.toInt(),
-            badge = 0x0DFFFFFF,
             card = 0x33000000,
             divider = 0x14FFFFFF,
             shadow = 0x26000000
