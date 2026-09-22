@@ -56,9 +56,9 @@ class Panel(private val title: String) {
         }
     }
 
-    fun mouseDragged(mouseX: Float, button: Int, deltaX: Float, deltaY: Float): Boolean = when {
-        sidebar.profileOpen -> profilePage.mouseDragged(mouseX, button, deltaX, deltaY)
-        openModule != null -> settingsPage.mouseDragged(mouseX, deltaY)
+    fun mouseDragged(mouseX: Float, mouseY: Float, button: Int, deltaX: Float, deltaY: Float): Boolean = when {
+        sidebar.profileOpen -> profilePage.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
+        openModule != null -> settingsPage.mouseDragged(mouseX, mouseY, deltaY)
         else -> moduleList.mouseDragged(deltaY)
     }
 

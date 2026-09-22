@@ -1,9 +1,11 @@
 package org.solidhax.shiro.gui
 
 import com.mojang.blaze3d.platform.InputConstants
+import foo.starred.cascade.graphics.extensions.arc.ring
 import foo.starred.cascade.graphics.extensions.image.image
 import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
+import foo.starred.cascade.graphics.extensions.rectangle.solid.rectangle
 import foo.starred.cascade.graphics.font.CascadeFonts
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import foo.starred.cascade.graphics.geometry.CascadeGeometricRadius
@@ -15,6 +17,7 @@ import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.settings.Setting
 import org.solidhax.shiro.gui.settings.impl.ActionSetting
 import org.solidhax.shiro.gui.settings.impl.BooleanSetting
+import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.KeybindSetting
 import org.solidhax.shiro.gui.settings.impl.NumberSetting
@@ -38,11 +41,49 @@ class SettingCards {
     private var dragX = 0f
     private var dragWidth = 0f
     private var listening: KeybindSetting? = null
+    private var colorDragging: ColorSetting? = null
+    private var draggingHue = false
+    private var pickerX = 0f
+    private var pickerY = 0f
+    private var pickerWidth = 0f
+
+    fun grouped(previous: Setting<*>, setting: Setting<*>): Boolean {
+        val parent = setting.parent ?: return false
+        return parent == previous || parent == previous.parent
+    }
+
+    fun corners(roundTop: Boolean, roundBottom: Boolean): CascadeGeometricRadius = when {
+        roundTop && roundBottom -> CORNERS
+        roundTop -> TOP_CORNERS
+        roundBottom -> BOTTOM_CORNERS
+        else -> CascadeGeometricRadius.ZERO
+    }
 
     fun height(setting: Setting<*>): Float = when (setting) {
         is NumberSetting<*>, is RangeSetting -> SLIDER_CARD_HEIGHT
         is StringSetting -> TEXT_CARD_HEIGHT
+        is ColorSetting -> if (setting.expanded) CARD_HEIGHT + PICKER_HEIGHT else CARD_HEIGHT
         else -> CARD_HEIGHT
+    }
+
+    inline fun forEachCard(settings: List<Setting<*>>, startY: Float, spacing: Float, block: (Setting<*>, Float, CascadeGeometricRadius) -> Unit) {
+        var cardY = startY
+        for (index in settings.indices) {
+            val setting = settings[index]
+            val groupedAbove = index > 0 && grouped(settings[index - 1], setting)
+            val groupedBelow = index < settings.lastIndex && grouped(setting, settings[index + 1])
+            block(setting, cardY, corners(!groupedAbove, !groupedBelow))
+            cardY += height(setting) + if (groupedBelow) 0f else spacing
+        }
+    }
+
+    fun totalHeight(settings: List<Setting<*>>, spacing: Float): Float {
+        var total = 0f
+        for (index in settings.indices) {
+            val groupedBelow = index < settings.lastIndex && grouped(settings[index], settings[index + 1])
+            total += height(settings[index]) + if (groupedBelow) 0f else spacing
+        }
+        return (total - spacing).coerceAtLeast(0f)
     }
 
     fun draw(
@@ -64,7 +105,8 @@ class SettingCards {
 
         graphics.roundedRectangle(x, y, width, height, lerpColor(theme.settingCard, theme.settingCardHovered, hover), corners)
 
-        val textY = if (isSlider(setting)) y + INNER_PADDING else y + (height - TEXT_SIZE) / 2f
+        val rowHeight = if (setting is ColorSetting) CARD_HEIGHT else height
+        val textY = if (isSlider(setting)) y + INNER_PADDING else y + (rowHeight - TEXT_SIZE) / 2f
         if (setting !is ActionSetting) {
             font.extract(graphics, setting.name, contentX, textY, theme.text, shadow = false, size = TEXT_SIZE)
         }
@@ -119,6 +161,14 @@ class SettingCards {
                 val fieldY = fieldY(y)
                 textField(setting).draw(graphics, fieldX, fieldY, fieldWidth, isAreaHovered(mouseX, mouseY, fieldX, fieldY, fieldWidth, TextField.HEIGHT))
             }
+
+            is ColorSetting -> {
+                val swatchX = contentRight - SWATCH_WIDTH
+                val swatchY = textY + (TEXT_SIZE - SWATCH_HEIGHT) / 2f
+                graphics.roundedRectangle(swatchX, swatchY, SWATCH_WIDTH, SWATCH_HEIGHT, setting.value, SWATCH_CORNERS)
+                graphics.hollowRectangle(swatchX, swatchY, SWATCH_WIDTH, SWATCH_HEIGHT, 1f, theme.divider, SWATCH_CORNERS)
+                if (setting.expanded) drawPicker(graphics, setting, contentX, y + CARD_HEIGHT, contentWidth)
+            }
         }
     }
 
@@ -146,6 +196,20 @@ class SettingCards {
                 if (!isAreaHovered(mouseX, mouseY, fieldX, fieldY(y), fieldWidth, TextField.HEIGHT)) return false
                 textField(setting).click(mouseX)
             }
+
+            is ColorSetting -> {
+                val pickerTop = y + CARD_HEIGHT
+                if (setting.expanded && isAreaHovered(mouseX, mouseY, contentX, pickerTop, contentWidth, PICKER_HEIGHT)) {
+                    pickerX = contentX
+                    pickerY = pickerTop
+                    pickerWidth = contentWidth
+                    colorDragging = setting
+                    draggingHue = mouseY >= pickerTop + PICKER_GAP + SQUARE_HEIGHT + PICKER_GAP / 2f
+                    updateColor(mouseX, mouseY)
+                } else {
+                    setting.expanded = !setting.expanded
+                }
+            }
             is NumberSetting<*>, is RangeSetting -> {
                 if (!isSliderHovered(mouseX, mouseY, y, contentX, contentWidth)) return false
                 dragging = setting
@@ -167,16 +231,22 @@ class SettingCards {
         }
     }
 
-    fun mouseDragged(mouseX: Float): Boolean {
+    fun mouseDragged(mouseX: Float, mouseY: Float): Boolean {
         if (dragging != null) {
             updateDragging(mouseX)
+            return true
+        }
+        if (colorDragging != null) {
+            updateColor(mouseX, mouseY)
             return true
         }
         return textFields.values.any { it.drag(mouseX) }
     }
 
     fun mouseReleased(button: Int) {
-        if (button == InputConstants.MOUSE_BUTTON_LEFT) dragging = null
+        if (button != InputConstants.MOUSE_BUTTON_LEFT) return
+        dragging = null
+        colorDragging = null
     }
 
     fun charTyped(event: CharacterEvent): Boolean = textFields.values.any { it.charTyped(event) }
@@ -193,6 +263,41 @@ class SettingCards {
     fun unfocus() {
         textFields.values.forEach { it.unfocus() }
         listening = null
+    }
+
+    private fun drawPicker(graphics: GuiGraphicsExtractor, setting: ColorSetting, x: Float, y: Float, width: Float) {
+        val squareY = y + PICKER_GAP
+        graphics.roundedRectangle(x, squareY, width, SQUARE_HEIGHT, CascadeGeometricColor(WHITE, setting.hueColor, WHITE, setting.hueColor), PICKER_CORNERS)
+        graphics.roundedRectangle(x, squareY, width, SQUARE_HEIGHT, CascadeGeometricColor(CLEAR, CLEAR, BLACK, BLACK), PICKER_CORNERS)
+        graphics.ring(
+            x + setting.saturation * width,
+            squareY + (1f - setting.brightness) * SQUARE_HEIGHT,
+            HANDLE_RADIUS - HANDLE_THICKNESS, HANDLE_RADIUS,
+            theme.text
+        )
+
+        val hueY = squareY + SQUARE_HEIGHT + PICKER_GAP
+        val segmentWidth = width / HUE_STOPS.size
+        HUE_STOPS.forEachIndexed { index, color ->
+            val next = HUE_STOPS[(index + 1) % HUE_STOPS.size]
+            graphics.rectangle(x + index * segmentWidth, hueY, segmentWidth, HUE_HEIGHT, CascadeGeometricColor.horizontal(color, next))
+        }
+        graphics.ring(
+            x + setting.hue * width,
+            hueY + HUE_HEIGHT / 2f,
+            HANDLE_RADIUS - HANDLE_THICKNESS, HANDLE_RADIUS,
+            theme.text
+        )
+    }
+
+    private fun updateColor(mouseX: Float, mouseY: Float) {
+        val setting = colorDragging ?: return
+        if (draggingHue) {
+            setting.setHue((mouseX - pickerX) / pickerWidth)
+        } else {
+            val squareY = pickerY + PICKER_GAP
+            setting.setSaturationBrightness((mouseX - pickerX) / pickerWidth, 1f - (mouseY - squareY) / SQUARE_HEIGHT)
+        }
     }
 
     private fun drawValue(graphics: GuiGraphicsExtractor, value: String, right: Float, textY: Float, color: CascadeGeometricColor) {
@@ -248,6 +353,21 @@ class SettingCards {
         private const val LISTENING = "..."
         private const val UNBOUND = "None"
 
+        const val SWATCH_WIDTH = 18f
+        const val SWATCH_HEIGHT = 10f
+        const val PICKER_GAP = 6f
+        const val SQUARE_HEIGHT = 56f
+        const val HUE_HEIGHT = 7f
+        const val HANDLE_RADIUS = 3.5f
+        const val HANDLE_THICKNESS = 1.2f
+        const val PICKER_HEIGHT = PICKER_GAP * 3f + SQUARE_HEIGHT + HUE_HEIGHT
+
+        private const val WHITE = 0xFFFFFFFF.toInt()
+        private const val BLACK = 0xFF000000.toInt()
+        private const val CLEAR = 0x00000000
+
+        private val HUE_STOPS = intArrayOf(0xFFFF0000.toInt(), 0xFFFFFF00.toInt(), 0xFF00FF00.toInt(), 0xFF00FFFF.toInt(), 0xFF0000FF.toInt(), 0xFFFF00FF.toInt())
+
         const val CARD_HEIGHT = TEXT_SIZE + INNER_PADDING * 2f
         const val SLIDER_CARD_HEIGHT = CARD_HEIGHT + SLIDER_GAP + Slider.HEIGHT
         const val TEXT_CARD_HEIGHT = TextField.HEIGHT + INNER_PADDING * 2f
@@ -255,6 +375,8 @@ class SettingCards {
         private const val CORNER = 4f
 
         private val KEY_CORNERS = CascadeGeometricRadius(3f)
+        private val SWATCH_CORNERS = CascadeGeometricRadius(2f)
+        private val PICKER_CORNERS = CascadeGeometricRadius(3f)
         val CORNERS = CascadeGeometricRadius(CORNER)
         val TOP_CORNERS = CascadeGeometricRadius(CORNER, CORNER, 0f, 0f)
         val BOTTOM_CORNERS = CascadeGeometricRadius(0f, 0f, CORNER, CORNER)

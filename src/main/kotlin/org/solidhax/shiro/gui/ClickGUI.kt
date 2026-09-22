@@ -16,9 +16,12 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
 
     var theme = Theme.DEFAULT
 
-    private val panel = Panel("shiro")
+    private val panel = Panel("Shiro")
     private val openAnimation = Animation(OPEN_DURATION, Easing.EASE_OUT)
     private var closing = false
+
+    var panelScale = 1f
+        private set
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
         AnimationManager.update()
@@ -30,6 +33,7 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
             return
         }
         val scale = MIN_SCALE + (1f - MIN_SCALE) * progress
+        panelScale = scale
         val centerX = width / 2f
         val centerY = height / 2f
 
@@ -49,7 +53,7 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
     }
 
     override fun mouseDragged(event: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
-        if (panel.mouseDragged(event.x().toFloat(), event.button(), deltaX.toFloat(), deltaY.toFloat())) return true
+        if (panel.mouseDragged(event.x().toFloat(), event.y().toFloat(), event.button(), deltaX.toFloat(), deltaY.toFloat())) return true
         return super.mouseDragged(event, deltaX, deltaY)
     }
 

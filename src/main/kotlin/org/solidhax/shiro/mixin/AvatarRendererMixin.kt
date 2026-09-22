@@ -17,7 +17,7 @@ abstract class AvatarRendererMixin {
         at = [At("HEAD")]
     )
     private fun shiro_applySize(state: AvatarRenderState, poseStack: PoseStack, info: CallbackInfo) {
-        if (CosmeticsManager.size == 1f || !CosmeticsManager.isLocalPlayer(state.id)) return
-        poseStack.scale(CosmeticsManager.size, CosmeticsManager.size, CosmeticsManager.size)
+        if (!CosmeticsManager.scaled || !CosmeticsManager.isLocalPlayer(state.id)) return
+        poseStack.scale(CosmeticsManager.sizeX, CosmeticsManager.sizeY, CosmeticsManager.sizeZ)
     }
 }

@@ -2,7 +2,9 @@ package org.solidhax.shiro.gui
 
 import com.mojang.blaze3d.platform.InputConstants
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
+import foo.starred.cascade.graphics.extensions.scissor.scissor
 import foo.starred.cascade.graphics.font.CascadeFonts
+import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import foo.starred.cascade.graphics.geometry.CascadeGeometricRadius
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.input.CharacterEvent
@@ -24,6 +26,7 @@ class ProfilePage {
 
     private val cards = SettingCards()
     private val capeSelector = CapeSelector()
+    private val scrollbar = Scrollbar()
 
     private var yaw = 0f
     private var pitch = 0f
@@ -44,17 +47,26 @@ class ProfilePage {
         this.width = width
         this.height = height
 
-        cards.draw(graphics, CosmeticsManager.nameSetting, columnX, nameCardY, columnWidth, mouseX, mouseY)
-        drawCapeCard(graphics, mouseX, mouseY)
-        cards.draw(graphics, CosmeticsManager.sizeSetting, columnX, sizeCardY, columnWidth, mouseX, mouseY)
+        graphics.scissor(columnX, y, columnWidth + SCROLLBAR_SPACE, height) {
+            cards.forEachCard(profileSettings, listY, SPACING) { setting, cardY, corners ->
+                cards.draw(graphics, setting, columnX, cardY, columnWidth, mouseX, mouseY, corners)
+            }
+            drawCapeCard(graphics, mouseX, mouseY)
+        }
+
+        scrollbar.draw(graphics, columnX + columnWidth + SCROLLBAR_SPACE, y, height, contentHeight, mouseX, mouseY)
         drawPreview(graphics)
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
-        if (button == InputConstants.MOUSE_BUTTON_LEFT) cards.unfocus()
+        if (button == InputConstants.MOUSE_BUTTON_LEFT) {
+            cards.unfocus()
+            if (scrollbar.mouseClicked(mouseX, mouseY)) return true
+        }
 
-        if (cards.mouseClicked(CosmeticsManager.nameSetting, columnX, nameCardY, columnWidth, mouseX, mouseY, button)) return true
-        if (cards.mouseClicked(CosmeticsManager.sizeSetting, columnX, sizeCardY, columnWidth, mouseX, mouseY, button)) return true
+        cards.forEachCard(profileSettings, listY, SPACING) { setting, cardY, _ ->
+            if (cards.mouseClicked(setting, columnX, cardY, columnWidth, mouseX, mouseY, button)) return true
+        }
         if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
         if (capeSelector.mouseClicked(mouseX, mouseY)) return true
 
@@ -67,9 +79,10 @@ class ProfilePage {
         return false
     }
 
-    fun mouseDragged(mouseX: Float, button: Int, deltaX: Float, deltaY: Float): Boolean {
+    fun mouseDragged(mouseX: Float, mouseY: Float, button: Int, deltaX: Float, deltaY: Float): Boolean {
         if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
-        if (cards.mouseDragged(mouseX)) return true
+        if (scrollbar.mouseDragged(deltaY)) return true
+        if (cards.mouseDragged(mouseX, mouseY)) return true
         if (!dragging) return false
 
         yaw -= deltaX * ROTATE_SPEED
@@ -80,12 +93,14 @@ class ProfilePage {
 
     fun mouseReleased(button: Int) {
         cards.mouseReleased(button)
+        if (button == InputConstants.MOUSE_BUTTON_LEFT) scrollbar.mouseReleased()
         if (button != InputConstants.MOUSE_BUTTON_LEFT || !dragging) return
         dragging = false
         interacted()
     }
 
     fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean {
+        if (isAreaHovered(mouseX, mouseY, columnX, y, columnWidth + SCROLLBAR_SPACE, height)) return scrollbar.scroll(amount)
         if (!isAreaHovered(mouseX, mouseY, previewX, previewY, previewWidth, previewHeight)) return false
         zoom = (zoom * ZOOM_STEP.pow(amount)).coerceIn(MIN_ZOOM, MAX_ZOOM)
         interacted()
@@ -136,18 +151,54 @@ class ProfilePage {
             state.scale = 1f
         }
 
-        val size = CosmeticsManager.size
+        val size = CosmeticsManager.sizeY
         val scale = previewHeight * BASE_SCALE * zoom
         val camera = Quaternionf().rotateX(pitch * DEG_TO_RAD)
         val rotation = Quaternionf().rotateZ(PI.toFloat()).mul(camera)
         val translation = rotation.transform(Vector3f(0f, state.boundingBoxHeight * size / 2f, 0f)).negate()
 
+        drawNameTag(graphics, state.boundingBoxHeight * size * scale, scale)
+
+        val panelScale = ClickGUI.panelScale
+        val centerX = mc.window.guiScaledWidth / 2f
+        val centerY = mc.window.guiScaledHeight / 2f
+
         graphics.entity(
-            state, scale, translation, rotation, camera,
-            (previewX + 1f).toInt(), (previewY + 1f).toInt(),
-            (previewX + previewWidth - 1f).toInt(), (previewY + previewHeight - 1f).toInt()
+            state, scale * panelScale, translation, rotation, camera,
+            scaled(previewX + 1f, centerX, panelScale).toInt(), scaled(previewY + 1f, centerY, panelScale).toInt(),
+            scaled(previewX + previewWidth - 1f, centerX, panelScale).toInt(), scaled(previewY + previewHeight - 1f, centerY, panelScale).toInt()
         )
     }
+
+    private fun drawNameTag(graphics: GuiGraphicsExtractor, modelHeight: Float, scale: Float) {
+        val name = CosmeticsManager.displayName
+        if (name.isEmpty()) return
+
+        val textWidth = font.width(name, NAMETAG_SIZE)
+        val centerX = previewX + previewWidth / 2f
+        val textY = previewY + previewHeight / 2f - modelHeight / 2f - NAMETAG_OFFSET * scale - NAMETAG_SIZE
+
+        graphics.scissor(previewX, previewY, previewWidth, previewHeight) {
+            graphics.roundedRectangle(
+                centerX - textWidth / 2f - NAMETAG_PADDING,
+                textY - NAMETAG_PADDING / 2f,
+                textWidth + NAMETAG_PADDING * 2f,
+                NAMETAG_SIZE + NAMETAG_PADDING,
+                theme.card,
+                NAMETAG_CORNERS
+            )
+
+            var charX = centerX - textWidth / 2f
+            name.forEachIndexed { index, char ->
+                val text = char.toString()
+                val color = if (CosmeticsManager.faded) CascadeGeometricColor(CosmeticsManager.nameColorAt(index, name.length)) else theme.text
+                font.extract(graphics, text, charX, textY, color, shadow = false, size = NAMETAG_SIZE)
+                charX += font.width(text, NAMETAG_SIZE)
+            }
+        }
+    }
+
+    private fun scaled(value: Float, center: Float, scale: Float): Float = center + (value - center) * scale
 
     private fun idleSpin() {
         if (!dragging && Util.getMillis() - lastInteraction > IDLE_DELAY_MS) {
@@ -166,12 +217,14 @@ class ProfilePage {
     }
 
     private val columnX get() = x + PADDING
-    private val columnWidth get() = width / 2f - PADDING * 1.5f
+    private val columnWidth get() = width / 2f - PADDING * 1.5f - SCROLLBAR_SPACE
     private val controlX get() = columnX + SettingCards.INNER_PADDING
     private val controlWidth get() = columnWidth - SettingCards.INNER_PADDING * 2f
 
-    private val nameCardY get() = y + PADDING
-    private val capeCardY get() = nameCardY + SettingCards.TEXT_CARD_HEIGHT + SPACING
+    private val profileSettings get() = CosmeticsManager.profileSettings.filter { it.isVisible }
+    private val listY get() = y + PADDING - scrollbar.offset
+    private val capeCardY get() = listY + cards.totalHeight(profileSettings, SPACING) + SPACING
+    private val contentHeight get() = PADDING * 2f + cards.totalHeight(profileSettings, SPACING) + SPACING + CAPE_CARD_HEIGHT
     private val sizeCardY get() = capeCardY + CAPE_CARD_HEIGHT + SPACING
 
     private val previewX get() = x + width / 2f + PADDING / 2f
@@ -183,8 +236,13 @@ class ProfilePage {
         private const val PADDING = 10f
         private const val SPACING = 6f
         private const val GAP = 6f
+        private const val SCROLLBAR_SPACE = 6f
         private const val CAPE_LABEL = "Cape"
         private const val CAPE_CARD_HEIGHT = SettingCards.INNER_PADDING * 2f + SettingCards.TEXT_SIZE + GAP + CapeSelector.HEIGHT
+
+        private const val NAMETAG_SIZE = 8f
+        private const val NAMETAG_OFFSET = 0.22f
+        private const val NAMETAG_PADDING = 4f
 
         private const val HINT_AREA = 14f
         private const val HINT_SIZE = 8f
@@ -201,6 +259,7 @@ class ProfilePage {
         private const val DEG_TO_RAD = (PI / 180.0).toFloat()
 
         private val CORNERS = CascadeGeometricRadius(4f)
+        private val NAMETAG_CORNERS = CascadeGeometricRadius(3f)
 
         private val font get() = CascadeFonts.sans
     }
