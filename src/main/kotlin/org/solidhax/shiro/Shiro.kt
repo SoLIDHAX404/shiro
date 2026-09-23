@@ -18,7 +18,7 @@ object Shiro : ClientModInitializer {
         )
 
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            arrayOf(mainCommand).forEach { commodore -> commodore.register(dispatcher) }
+            mainCommand.register(dispatcher)
         }
     }
 }

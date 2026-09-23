@@ -3,12 +3,8 @@ package org.solidhax.shiro.gui
 import com.mojang.blaze3d.platform.InputConstants
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import foo.starred.cascade.graphics.extensions.scissor.scissor
-import foo.starred.cascade.graphics.font.CascadeFonts
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
-import foo.starred.cascade.graphics.geometry.CascadeGeometricRadius
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.input.CharacterEvent
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState
 import net.minecraft.util.Util
 import net.minecraft.world.entity.Entity
@@ -17,16 +13,19 @@ import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.cosmetics.CosmeticsManager
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.gui.Page.Companion.PADDING
+import org.solidhax.shiro.utils.ui.Radius
+import org.solidhax.shiro.utils.ui.TEXT_SIZE
 import org.solidhax.shiro.utils.ui.animation.AnimationManager
 import org.solidhax.shiro.utils.ui.isAreaHovered
+import org.solidhax.shiro.utils.ui.text
+import org.solidhax.shiro.utils.ui.textWidth
 import kotlin.math.PI
 import kotlin.math.pow
 
-class ProfilePage {
+class ProfilePage private constructor(private val list: SettingList) : Page by list {
 
-    private val cards = SettingCards()
-    private val capeSelector = CapeSelector()
-    private val scrollbar = Scrollbar()
+    constructor() : this(SettingList(CosmeticsManager.settings))
 
     private var yaw = 0f
     private var pitch = 0f
@@ -34,107 +33,60 @@ class ProfilePage {
     private var dragging = false
     private var lastInteraction = 0L
 
-    private var x = 0f
-    private var y = 0f
-    private var width = 0f
-    private var height = 0f
+    private var previewX = 0f
+    private var previewY = 0f
+    private var previewWidth = 0f
+    private var previewHeight = 0f
 
-    private val hintWidth by lazy { font.width(HINT, HINT_SIZE) }
+    override fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float, mouseX: Float, mouseY: Float) {
+        list.draw(graphics, x, y, (width + PADDING) / 2f, height, mouseX, mouseY)
 
-    fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float, mouseX: Float, mouseY: Float) {
-        this.x = x
-        this.y = y
-        this.width = width
-        this.height = height
+        previewX = x + (width + PADDING) / 2f
+        previewY = y + PADDING
+        previewWidth = width / 2f - PADDING * 1.5f
+        previewHeight = height - PADDING * 2f - HINT_AREA
 
-        graphics.scissor(columnX, y, columnWidth + SCROLLBAR_SPACE, height) {
-            cards.forEachCard(profileSettings, listY, SPACING) { setting, cardY, corners ->
-                cards.draw(graphics, setting, columnX, cardY, columnWidth, mouseX, mouseY, corners)
-            }
-            drawCapeCard(graphics, mouseX, mouseY)
-        }
-
-        scrollbar.draw(graphics, columnX + columnWidth + SCROLLBAR_SPACE, y, height, contentHeight, mouseX, mouseY)
-        drawPreview(graphics)
+        graphics.roundedRectangle(previewX, previewY, previewWidth, previewHeight, theme.card, Radius.LARGE)
+        if (!dragging && Util.getMillis() - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * AnimationManager.deltaSeconds
+        mc.player?.let { drawEntity(graphics, it) }
+        graphics.text(HINT, previewX + (previewWidth - textWidth(HINT)) / 2f, previewY + previewHeight + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
     }
 
-    fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
-        if (button == InputConstants.MOUSE_BUTTON_LEFT) {
-            cards.unfocus()
-            if (scrollbar.mouseClicked(mouseX, mouseY)) return true
+    override fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
+        if (list.mouseClicked(mouseX, mouseY, button, doubleClick)) return true
+        if (button != InputConstants.MOUSE_BUTTON_LEFT || !isPreviewHovered(mouseX, mouseY)) return false
+        if (doubleClick) {
+            yaw = 0f
+            pitch = 0f
+            zoom = 1f
         }
-
-        cards.forEachCard(profileSettings, listY, SPACING) { setting, cardY, _ ->
-            if (cards.mouseClicked(setting, columnX, cardY, columnWidth, mouseX, mouseY, button)) return true
-        }
-        if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
-        if (capeSelector.mouseClicked(mouseX, mouseY)) return true
-
-        if (isAreaHovered(mouseX, mouseY, previewX, previewY, previewWidth, previewHeight)) {
-            if (doubleClick) resetView()
-            dragging = true
-            interacted()
-            return true
-        }
-        return false
+        dragging = true
+        lastInteraction = Util.getMillis()
+        return true
     }
 
-    fun mouseDragged(mouseX: Float, mouseY: Float, button: Int, deltaX: Float, deltaY: Float): Boolean {
-        if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
-        if (scrollbar.mouseDragged(deltaY)) return true
-        if (cards.mouseDragged(mouseX, mouseY)) return true
+    override fun mouseDragged(mouseX: Float, mouseY: Float, button: Int, deltaX: Float, deltaY: Float): Boolean {
+        if (list.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true
         if (!dragging) return false
-
         yaw -= deltaX * ROTATE_SPEED
         pitch = (pitch - deltaY * ROTATE_SPEED).coerceIn(-MAX_PITCH, MAX_PITCH)
-        interacted()
+        lastInteraction = Util.getMillis()
         return true
     }
 
-    fun mouseReleased(button: Int) {
-        cards.mouseReleased(button)
-        if (button == InputConstants.MOUSE_BUTTON_LEFT) scrollbar.mouseReleased()
+    override fun mouseReleased(button: Int) {
+        list.mouseReleased(button)
         if (button != InputConstants.MOUSE_BUTTON_LEFT || !dragging) return
         dragging = false
-        interacted()
+        lastInteraction = Util.getMillis()
     }
 
-    fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean {
-        if (isAreaHovered(mouseX, mouseY, columnX, y, columnWidth + SCROLLBAR_SPACE, height)) return scrollbar.scroll(amount)
-        if (!isAreaHovered(mouseX, mouseY, previewX, previewY, previewWidth, previewHeight)) return false
+    override fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean {
+        if (list.mouseScrolled(mouseX, mouseY, amount)) return true
+        if (!isPreviewHovered(mouseX, mouseY)) return false
         zoom = (zoom * ZOOM_STEP.pow(amount)).coerceIn(MIN_ZOOM, MAX_ZOOM)
-        interacted()
+        lastInteraction = Util.getMillis()
         return true
-    }
-
-    fun charTyped(event: CharacterEvent): Boolean = cards.charTyped(event)
-
-    fun keyPressed(event: KeyEvent): Boolean = cards.keyPressed(event)
-
-    fun unfocus() {
-        cards.unfocus()
-    }
-
-    private fun drawCapeCard(graphics: GuiGraphicsExtractor, mouseX: Float, mouseY: Float) {
-        graphics.roundedRectangle(columnX, capeCardY, columnWidth, CAPE_CARD_HEIGHT, theme.settingCard, CORNERS)
-        font.extract(graphics, CAPE_LABEL, controlX, capeCardY + SettingCards.INNER_PADDING, theme.text, shadow = false, size = SettingCards.TEXT_SIZE)
-        capeSelector.draw(graphics, controlX, capeCardY + SettingCards.INNER_PADDING + SettingCards.TEXT_SIZE + GAP, controlWidth, mouseX, mouseY)
-    }
-
-    private fun drawPreview(graphics: GuiGraphicsExtractor) {
-        graphics.roundedRectangle(previewX, previewY, previewWidth, previewHeight, theme.card, CORNERS)
-
-        idleSpin()
-        mc.player?.let { drawEntity(graphics, it) }
-
-        font.extract(
-            graphics, HINT,
-            previewX + (previewWidth - hintWidth) / 2f,
-            previewY + previewHeight + (HINT_AREA - HINT_SIZE) / 2f,
-            theme.textMuted,
-            shadow = false,
-            size = HINT_SIZE
-        )
     }
 
     private fun drawEntity(graphics: GuiGraphicsExtractor, entity: Entity) {
@@ -151,101 +103,51 @@ class ProfilePage {
             state.scale = 1f
         }
 
-        val size = CosmeticsManager.sizeY
+        val modelHeight = state.boundingBoxHeight * CosmeticsManager.heightScale
         val scale = previewHeight * BASE_SCALE * zoom
         val camera = Quaternionf().rotateX(pitch * DEG_TO_RAD)
         val rotation = Quaternionf().rotateZ(PI.toFloat()).mul(camera)
-        val translation = rotation.transform(Vector3f(0f, state.boundingBoxHeight * size / 2f, 0f)).negate()
+        val translation = rotation.transform(Vector3f(0f, modelHeight / 2f, 0f)).negate()
 
-        drawNameTag(graphics, state.boundingBoxHeight * size * scale, scale)
+        drawNameTag(graphics, previewY + previewHeight / 2f - modelHeight * scale / 2f - NAMETAG_OFFSET * scale - TEXT_SIZE)
 
         val panelScale = ClickGUI.panelScale
         val centerX = mc.window.guiScaledWidth / 2f
         val centerY = mc.window.guiScaledHeight / 2f
+        fun scaledX(value: Float) = (centerX + (value - centerX) * panelScale).toInt()
+        fun scaledY(value: Float) = (centerY + (value - centerY) * panelScale).toInt()
 
         graphics.entity(
             state, scale * panelScale, translation, rotation, camera,
-            scaled(previewX + 1f, centerX, panelScale).toInt(), scaled(previewY + 1f, centerY, panelScale).toInt(),
-            scaled(previewX + previewWidth - 1f, centerX, panelScale).toInt(), scaled(previewY + previewHeight - 1f, centerY, panelScale).toInt()
+            scaledX(previewX + 1f), scaledY(previewY + 1f), scaledX(previewX + previewWidth - 1f), scaledY(previewY + previewHeight - 1f)
         )
     }
 
-    private fun drawNameTag(graphics: GuiGraphicsExtractor, modelHeight: Float, scale: Float) {
+    private fun drawNameTag(graphics: GuiGraphicsExtractor, textY: Float) {
         val name = CosmeticsManager.displayName
-        if (name.isEmpty()) return
-
-        val textWidth = font.width(name, NAMETAG_SIZE)
-        val centerX = previewX + previewWidth / 2f
-        val textY = previewY + previewHeight / 2f - modelHeight / 2f - NAMETAG_OFFSET * scale - NAMETAG_SIZE
+        var charX = previewX + (previewWidth - textWidth(name)) / 2f
 
         graphics.scissor(previewX, previewY, previewWidth, previewHeight) {
             graphics.roundedRectangle(
-                centerX - textWidth / 2f - NAMETAG_PADDING,
-                textY - NAMETAG_PADDING / 2f,
-                textWidth + NAMETAG_PADDING * 2f,
-                NAMETAG_SIZE + NAMETAG_PADDING,
-                theme.card,
-                NAMETAG_CORNERS
+                charX - NAMETAG_PADDING, textY - NAMETAG_PADDING / 2f,
+                textWidth(name) + NAMETAG_PADDING * 2f, TEXT_SIZE + NAMETAG_PADDING,
+                theme.card, Radius.MEDIUM
             )
-
-            var charX = centerX - textWidth / 2f
             name.forEachIndexed { index, char ->
-                val text = char.toString()
                 val color = if (CosmeticsManager.faded) CascadeGeometricColor(CosmeticsManager.nameColorAt(index, name.length)) else theme.text
-                font.extract(graphics, text, charX, textY, color, shadow = false, size = NAMETAG_SIZE)
-                charX += font.width(text, NAMETAG_SIZE)
+                graphics.text(char.toString(), charX, textY, color)
+                charX += textWidth(char.toString())
             }
         }
     }
 
-    private fun scaled(value: Float, center: Float, scale: Float): Float = center + (value - center) * scale
-
-    private fun idleSpin() {
-        if (!dragging && Util.getMillis() - lastInteraction > IDLE_DELAY_MS) {
-            yaw += SPIN_SPEED * AnimationManager.deltaSeconds
-        }
-    }
-
-    private fun interacted() {
-        lastInteraction = Util.getMillis()
-    }
-
-    private fun resetView() {
-        yaw = 0f
-        pitch = 0f
-        zoom = 1f
-    }
-
-    private val columnX get() = x + PADDING
-    private val columnWidth get() = width / 2f - PADDING * 1.5f - SCROLLBAR_SPACE
-    private val controlX get() = columnX + SettingCards.INNER_PADDING
-    private val controlWidth get() = columnWidth - SettingCards.INNER_PADDING * 2f
-
-    private val profileSettings get() = CosmeticsManager.profileSettings.filter { it.isVisible }
-    private val listY get() = y + PADDING - scrollbar.offset
-    private val capeCardY get() = listY + cards.totalHeight(profileSettings, SPACING) + SPACING
-    private val contentHeight get() = PADDING * 2f + cards.totalHeight(profileSettings, SPACING) + SPACING + CAPE_CARD_HEIGHT
-    private val sizeCardY get() = capeCardY + CAPE_CARD_HEIGHT + SPACING
-
-    private val previewX get() = x + width / 2f + PADDING / 2f
-    private val previewY get() = y + PADDING
-    private val previewWidth get() = width / 2f - PADDING * 1.5f
-    private val previewHeight get() = height - PADDING * 2f - HINT_AREA
+    private fun isPreviewHovered(mouseX: Float, mouseY: Float): Boolean =
+        isAreaHovered(mouseX, mouseY, previewX, previewY, previewWidth, previewHeight)
 
     companion object {
-        private const val PADDING = 10f
-        private const val SPACING = 6f
-        private const val GAP = 6f
-        private const val SCROLLBAR_SPACE = 6f
-        private const val CAPE_LABEL = "Cape"
-        private const val CAPE_CARD_HEIGHT = SettingCards.INNER_PADDING * 2f + SettingCards.TEXT_SIZE + GAP + CapeSelector.HEIGHT
-
-        private const val NAMETAG_SIZE = 8f
         private const val NAMETAG_OFFSET = 0.22f
         private const val NAMETAG_PADDING = 4f
-
         private const val HINT_AREA = 14f
-        private const val HINT_SIZE = 8f
         private const val HINT = "Drag to rotate • Scroll to zoom"
 
         private const val BASE_SCALE = 0.38f
@@ -257,10 +159,5 @@ class ProfilePage {
         private const val MIN_ZOOM = 0.5f
         private const val MAX_ZOOM = 4f
         private const val DEG_TO_RAD = (PI / 180.0).toFloat()
-
-        private val CORNERS = CascadeGeometricRadius(4f)
-        private val NAMETAG_CORNERS = CascadeGeometricRadius(3f)
-
-        private val font get() = CascadeFonts.sans
     }
 }

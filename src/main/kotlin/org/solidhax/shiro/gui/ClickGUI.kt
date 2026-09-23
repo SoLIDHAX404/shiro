@@ -9,7 +9,6 @@ import net.minecraft.network.chat.Component
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.utils.ui.animation.Animation
 import org.solidhax.shiro.utils.ui.animation.AnimationManager
-import org.solidhax.shiro.utils.ui.animation.Easing
 import kotlin.math.floor
 
 object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
@@ -17,7 +16,7 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
     var theme = Theme.DEFAULT
 
     private val panel = Panel("Shiro")
-    private val openAnimation = Animation(OPEN_DURATION, Easing.EASE_OUT)
+    private val openAnimation = Animation(OPEN_DURATION)
     private var closing = false
 
     var panelScale = 1f
@@ -32,15 +31,10 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
             mc.gui.setScreen(null)
             return
         }
-        val scale = MIN_SCALE + (1f - MIN_SCALE) * progress
-        panelScale = scale
-        val centerX = width / 2f
-        val centerY = height / 2f
+        panelScale = MIN_SCALE + (1f - MIN_SCALE) * progress
 
         graphics.pose().pushMatrix()
-        graphics.pose().translate(centerX, centerY)
-        graphics.pose().scale(scale, scale)
-        graphics.pose().translate(-centerX, -centerY)
+        graphics.pose().scaleAround(panelScale, width / 2f, height / 2f)
         panel.draw(graphics, panelX, panelY, mouseX.toFloat(), mouseY.toFloat())
         graphics.pose().popMatrix()
 

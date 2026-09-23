@@ -1,10 +1,28 @@
 package org.solidhax.shiro.utils.ui.animation
 
-class Animation(
-    private val duration: Long,
-    private val easing: Easing = Easing.EASE_OUT,
-    initial: Float = 0f
-) {
+import net.minecraft.util.Util
+import kotlin.math.pow
+
+const val HOVER_DURATION = 120L
+
+object AnimationManager {
+
+    private const val MAX_DELTA = 0.1f
+
+    var time = Util.getMillis()
+        private set
+
+    var deltaSeconds = 0f
+        private set
+
+    fun update() {
+        val now = Util.getMillis()
+        deltaSeconds = ((now - time) / 1000f).coerceIn(0f, MAX_DELTA)
+        time = now
+    }
+}
+
+class Animation(private val duration: Long = HOVER_DURATION, initial: Float = 0f) {
 
     private var from = initial
     private var to = initial
@@ -12,13 +30,10 @@ class Animation(
 
     val value: Float
         get() {
-            val elapsed = AnimationManager.time - startTime
-            if (elapsed >= duration || duration <= 0L) return to
-            return from + (to - from) * easing.apply(elapsed / duration.toFloat())
+            val progress = (AnimationManager.time - startTime) / duration.toFloat()
+            if (progress >= 1f) return to
+            return from + (to - from) * (1f - (1f - progress).pow(3))
         }
-
-    val animating: Boolean
-        get() = AnimationManager.time - startTime < duration
 
     fun animateTo(target: Float): Float {
         if (target != to) {
@@ -42,4 +57,11 @@ class Animation(
         to = 1f
         startTime = AnimationManager.time
     }
+}
+
+class Animations<K>(private val duration: Long = HOVER_DURATION) {
+
+    private val animations = HashMap<K, Animation>()
+
+    operator fun get(key: K): Animation = animations.getOrPut(key) { Animation(duration) }
 }

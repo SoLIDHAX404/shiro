@@ -1,5 +1,6 @@
 package org.solidhax.shiro.cosmetics
 
+import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.core.ClientAsset
 import net.minecraft.world.entity.player.PlayerSkin
 import org.solidhax.shiro.Shiro.mc
@@ -13,58 +14,41 @@ import java.util.Optional
 
 object CosmeticsManager {
 
-    const val DEFAULT_COLOR = 0xFFFFFFFF.toInt()
+    private const val WHITE = 0xFFFFFFFF.toInt()
 
-    val displayNameSetting = DropdownSetting("Display Name")
+    private val displayNameDropdown = DropdownSetting("Display Name")
+    private val name = StringSetting("Name", mc.user.name, 16, desc = "Name shown instead of yours.").withDependency(displayNameDropdown)
+    private val startColor = ColorSetting("Start Color", WHITE, desc = "Color the name fades from.").withDependency(displayNameDropdown)
+    private val endColor = ColorSetting("End Color", WHITE, desc = "Color the name fades to.").withDependency(displayNameDropdown)
 
-    val nameSetting = StringSetting("Name", mc.user.name, 16, desc = "Name shown instead of yours.").withDependency(displayNameSetting)
+    private val sizeDropdown = DropdownSetting("Player Size")
+    private val width = sizeSetting("Width", "X")
+    private val height = sizeSetting("Height", "Y")
+    private val depth = sizeSetting("Depth", "Z")
 
-    val startColorSetting = ColorSetting("Start Color", DEFAULT_COLOR, desc = "Color the name fades from.").withDependency(displayNameSetting)
+    private val cape = CapeSetting("Cape")
 
-    val endColorSetting = ColorSetting("End Color", DEFAULT_COLOR, desc = "Color the name fades to.").withDependency(displayNameSetting)
+    val settings = listOf(displayNameDropdown, name, startColor, endColor, sizeDropdown, width, height, depth, cape)
 
-    val sizeSetting = DropdownSetting("Player Size")
+    val displayName: String get() = name.value.ifBlank { mc.user.name }
 
-    val sizeXSetting = NumberSetting("Width", 100, 50, 150, 5, desc = "Scale along the X axis.", unit = "%").withDependency(sizeSetting)
+    val faded: Boolean get() = startColor.value != WHITE || endColor.value != WHITE
 
-    val sizeYSetting = NumberSetting("Height", 100, 50, 150, 5, desc = "Scale along the Y axis.", unit = "%").withDependency(sizeSetting)
+    val heightScale: Float get() = height.value / 100f
 
-    val sizeZSetting = NumberSetting("Depth", 100, 50, 150, 5, desc = "Scale along the Z axis.", unit = "%").withDependency(sizeSetting)
-
-    val displayNameSettings = listOf(displayNameSetting, nameSetting, startColorSetting, endColorSetting)
-
-    val sizeSettings = listOf(sizeSetting, sizeXSetting, sizeYSetting, sizeZSetting)
-
-    val profileSettings = displayNameSettings + sizeSettings
-
-    var cape: Cape = Cape.NONE
-
-    val startColor: Int get() = startColorSetting.value
-
-    val endColor: Int get() = endColorSetting.value
-
-    val faded: Boolean get() = startColor != DEFAULT_COLOR || endColor != DEFAULT_COLOR
-
-    val displayName: String get() = nameSetting.value.ifBlank { mc.user.name }
-
-    fun nameColorAt(index: Int, length: Int): Int {
-        val progress = if (length <= 1) 0f else index.toFloat() / (length - 1)
-        return lerpColor(startColor, endColor, progress)
-    }
-
-    val sizeX: Float get() = sizeXSetting.value / 100f
-
-    val sizeY: Float get() = sizeYSetting.value / 100f
-
-    val sizeZ: Float get() = sizeZSetting.value / 100f
-
-    val scaled: Boolean get() = sizeX != 1f || sizeY != 1f || sizeZ != 1f
+    fun nameColorAt(index: Int, length: Int): Int =
+        lerpColor(startColor.value, endColor.value, if (length <= 1) 0f else index.toFloat() / (length - 1))
 
     fun apply(skin: PlayerSkin): PlayerSkin {
-        val texture = cape.texture ?: return skin
+        val texture = cape.value.texture ?: return skin
         val asset = ClientAsset.ResourceTexture(texture, texture)
         return skin.with(PlayerSkin.Patch.create(Optional.empty(), Optional.of(asset), Optional.empty(), Optional.empty()))
     }
 
-    fun isLocalPlayer(entityId: Int): Boolean = mc.player?.id == entityId
+    fun scale(entityId: Int, poseStack: PoseStack) {
+        if (mc.player?.id == entityId) poseStack.scale(width.value / 100f, heightScale, depth.value / 100f)
+    }
+
+    private fun sizeSetting(name: String, axis: String) =
+        NumberSetting(name, 100, 50, 150, 5, desc = "Scale along the $axis axis.", unit = "%").withDependency(sizeDropdown)
 }
