@@ -41,6 +41,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
     private val capeSelectors = HashMap<CapeSetting, CapeSelector>()
     private val hoverAnimations = Animations<Setting<*>>()
     private val stateAnimations = Animations<Setting<*>>(STATE_DURATION)
+    private val pressAnimations = Animations<Setting<*>>(PRESS_DURATION)
 
     private var visible = emptyList<Setting<*>>()
     private var dragging: Setting<*>? = null
@@ -65,13 +66,13 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
     }
 
     override fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
-        if (button == InputConstants.MOUSE_BUTTON_LEFT) unfocus()
         listening?.let {
             it.value = InputConstants.Type.MOUSE.getOrCreate(button)
             listening = null
             return true
         }
         if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
+        unfocus()
         if (scroll.mouseClicked(mouseX, mouseY)) return true
         if (!scroll.isHovered(mouseX, mouseY)) return false
 
@@ -152,7 +153,15 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
                 lerpColor(theme.textMuted, theme.text, hover), QUARTER_TURN * stateAnimations[setting].animate(setting.enabled)
             )
 
-            is ActionSetting -> graphics.text(setting.name, x + (width - textWidth(setting.name)) / 2f, textY, lerpColor(theme.textMuted, theme.text, hover))
+            is ActionSetting -> {
+                val press = pressAnimations[setting].value
+                val tint = theme.accent and 0xFFFFFF
+                graphics.roundedRectangle(x, y, width, CARD_HEIGHT, lerpColor(tint, tint or PRESS_ALPHA, press), corners)
+
+                val size = TEXT_SIZE * (1f - PRESS_SHRINK * press)
+                val color = lerpColor(lerpColor(theme.textMuted, theme.text, hover), CascadeGeometricColor(theme.accent), press)
+                graphics.text(setting.name, x + (width - textWidth(setting.name, size)) / 2f, y + (CARD_HEIGHT - size) / 2f, color, size)
+            }
 
             is KeybindSetting -> drawKeybind(graphics, setting, textY, hover)
 
@@ -178,7 +187,11 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
             is BooleanSetting -> setting.enabled = !setting.enabled
             is SelectorSetting -> setting.value += 1
             is DropdownSetting -> setting.enabled = !setting.enabled
-            is ActionSetting -> setting.action()
+            is ActionSetting -> {
+                pressAnimations[setting].set(1f)
+                pressAnimations[setting].animateTo(0f)
+                setting.action()
+            }
             is KeybindSetting -> listening = setting
             is StringSetting -> return textField(setting).mouseClicked(mouseX, mouseY)
             is CapeSetting -> return capeSelector(setting).mouseClicked(mouseX, mouseY)
@@ -283,6 +296,9 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
         private const val KEY_PADDING = 6f
         private const val KEY_MIN_WIDTH = 34f
         private const val STATE_DURATION = 180L
+        private const val PRESS_DURATION = 450L
+        private const val PRESS_ALPHA = 0x40000000
+        private const val PRESS_SHRINK = 0.08f
         private const val QUARTER_TURN = (PI / 2.0).toFloat()
         private const val LISTENING = "..."
         private const val UNBOUND = "None"
