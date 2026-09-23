@@ -12,10 +12,10 @@ import org.solidhax.shiro.utils.ui.accentEdge
 import org.solidhax.shiro.utils.ui.animation.Animation
 import org.solidhax.shiro.utils.ui.animation.Animations
 import org.solidhax.shiro.utils.ui.isAreaHovered
-import org.solidhax.shiro.utils.ui.lerpColor
+import org.solidhax.shiro.utils.ui.fade
 import org.solidhax.shiro.utils.ui.text
 
-class Sidebar {
+class Sidebar(private val isShown: (Category) -> Boolean) {
 
     var selected: Category = categories.first()
         private set
@@ -24,6 +24,8 @@ class Sidebar {
         private set
 
     private val hoverAnimations = Animations<Any>()
+    private val visibility = Animations<Category>(SLIDE_DURATION, 1f)
+    private val highlightAlpha = Animation(SLIDE_DURATION, 1f)
     private val indicatorY = Animation(SLIDE_DURATION, PADDING)
     private val indicatorHeight = Animation(SLIDE_DURATION, ENTRY_HEIGHT)
 
@@ -36,16 +38,21 @@ class Sidebar {
 
         graphics.rectangle(x + WIDTH, y, 1f, HEIGHT, theme.divider)
 
-        val highlightY = y + indicatorY.animateTo(if (profileOpen) BADGE_OFFSET else entryOffset(categories.indexOf(selected)))
+        val highlightY = y + indicatorY.animateTo(if (profileOpen) BADGE_OFFSET else entryOffset(selected))
         val highlightHeight = indicatorHeight.animateTo(if (profileOpen) ProfileBadge.HEIGHT else ENTRY_HEIGHT)
-        graphics.roundedRectangle(this.x, highlightY, ENTRY_WIDTH, highlightHeight, theme.entrySelected, Radius.LARGE)
-        graphics.accentEdge(this.x, highlightY, ENTRY_WIDTH, highlightHeight, Radius.LARGE, theme.accent, left = false)
+        val alpha = highlightAlpha.animate(profileOpen || isShown(selected))
+        graphics.roundedRectangle(this.x, highlightY, ENTRY_WIDTH, highlightHeight, fade(theme.entrySelected, alpha), Radius.LARGE)
+        graphics.accentEdge(this.x, highlightY, ENTRY_WIDTH, highlightHeight, Radius.LARGE, fade(theme.accent, alpha), left = false)
 
-        categories.forEachIndexed { index, category ->
-            val entryY = y + entryOffset(index)
-            val active = !profileOpen && category == selected
-            drawHover(graphics, category, entryY, ENTRY_HEIGHT, !active && isAreaHovered(mouseX, mouseY, this.x, entryY, ENTRY_WIDTH, ENTRY_HEIGHT))
-            graphics.text(category.name, this.x + TEXT_INSET, entryY + (ENTRY_HEIGHT - TEXT_SIZE) / 2f, if (active) theme.text else theme.textMuted)
+        var entryY = y + PADDING
+        categories.forEach { category ->
+            val shown = visibility[category].animate(isShown(category))
+            if (shown > 0f) {
+                val active = !profileOpen && category == selected
+                drawHover(graphics, category, entryY, ENTRY_HEIGHT, !active && isShown(category) && isAreaHovered(mouseX, mouseY, this.x, entryY, ENTRY_WIDTH, ENTRY_HEIGHT), shown)
+                graphics.text(category.name, this.x + TEXT_INSET, entryY + (ENTRY_HEIGHT - TEXT_SIZE) / 2f, (if (active) theme.text else theme.textMuted).alpha(shown))
+            }
+            entryY += (ENTRY_HEIGHT + SPACING) * shown
         }
 
         val badgeY = y + BADGE_OFFSET
@@ -61,18 +68,22 @@ class Sidebar {
             return true
         }
 
-        val index = categories.indices.firstOrNull { isAreaHovered(mouseX, mouseY, x, y + entryOffset(it), ENTRY_WIDTH, ENTRY_HEIGHT) } ?: return false
-        selected = categories[index]
-        profileOpen = false
+        select(categories.firstOrNull { isShown(it) && isAreaHovered(mouseX, mouseY, x, y + entryOffset(it), ENTRY_WIDTH, ENTRY_HEIGHT) } ?: return false)
         return true
     }
 
-    private fun drawHover(graphics: GuiGraphicsExtractor, key: Any, entryY: Float, height: Float, hovered: Boolean) {
-        val hover = hoverAnimations[key].animate(hovered)
-        if (hover > 0f) graphics.roundedRectangle(x, entryY, ENTRY_WIDTH, height, lerpColor(0, theme.entryHovered, hover), Radius.LARGE)
+    fun select(category: Category) {
+        selected = category
+        profileOpen = false
     }
 
-    private fun entryOffset(index: Int): Float = PADDING + index * (ENTRY_HEIGHT + SPACING)
+    private fun drawHover(graphics: GuiGraphicsExtractor, key: Any, entryY: Float, height: Float, hovered: Boolean, alpha: Float = 1f) {
+        val hover = hoverAnimations[key].animate(hovered) * alpha
+        if (hover > 0f) graphics.roundedRectangle(x, entryY, ENTRY_WIDTH, height, fade(theme.entryHovered, hover), Radius.LARGE)
+    }
+
+    private fun entryOffset(category: Category): Float =
+        PADDING + categories.takeWhile { it != category }.count(isShown) * (ENTRY_HEIGHT + SPACING)
 
     companion object {
         const val WIDTH = 110f

@@ -1,5 +1,6 @@
 package org.solidhax.shiro.gui
 
+import com.mojang.blaze3d.platform.InputConstants
 import foo.starred.cascade.graphics.extensions.blur.blur
 import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
@@ -16,10 +17,11 @@ import org.solidhax.shiro.utils.ui.text
 
 class Panel(private val title: String) {
 
-    private val sidebar = Sidebar()
+    private val searchBar = SearchBar(::onSearch)
+    private val sidebar = Sidebar(searchBar::matches)
     private val profilePage = SettingList(CosmeticsManager.settings)
     private val settingsPage = SettingsPage()
-    private val moduleList = ModuleList({ sidebar.selected }) { settingsPage.module = it }
+    private val moduleList = ModuleList({ sidebar.selected }, searchBar) { settingsPage.module = it }
     private val pages = listOf(profilePage, settingsPage, moduleList)
 
     private val page: Page
@@ -36,7 +38,7 @@ class Panel(private val title: String) {
         graphics.roundedRectangle(x, y, WIDTH, HEADER_HEIGHT, theme.headerTint, Radius.TOP)
         graphics.rectangle(x, y + HEADER_HEIGHT, WIDTH, 1f, theme.divider)
         graphics.text(title, x + Sidebar.TEXT_X, y + (HEADER_HEIGHT - TITLE_SIZE) / 2f, theme.text, TITLE_SIZE)
-        SearchBar.draw(graphics, x + WIDTH - SEARCH_MARGIN - SearchBar.WIDTH, y + (HEADER_HEIGHT - SearchBar.HEIGHT) / 2f)
+        searchBar.draw(graphics, x + WIDTH - SEARCH_MARGIN - SearchBar.WIDTH, y + (HEADER_HEIGHT - SearchBar.HEIGHT) / 2f)
 
         val bodyY = y + HEADER_HEIGHT + 1f
         sidebar.draw(graphics, x, bodyY, mouseX, mouseY)
@@ -46,6 +48,11 @@ class Panel(private val title: String) {
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
+        if (button == InputConstants.MOUSE_BUTTON_LEFT && searchBar.mouseClicked(mouseX, mouseY)) {
+            pages.forEach(Page::unfocus)
+            return true
+        }
+        searchBar.unfocus()
         if (!sidebar.mouseClicked(mouseX, mouseY, button)) return page.mouseClicked(mouseX, mouseY, button, doubleClick)
         unfocus()
         settingsPage.module = null
@@ -53,17 +60,26 @@ class Panel(private val title: String) {
     }
 
     fun mouseDragged(mouseX: Float, mouseY: Float, button: Int, deltaX: Float, deltaY: Float): Boolean =
-        page.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
+        searchBar.mouseDragged(mouseX) || page.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
 
     fun mouseReleased(button: Int) = pages.forEach { it.mouseReleased(button) }
 
     fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean = page.mouseScrolled(mouseX, mouseY, amount)
 
-    fun charTyped(event: CharacterEvent): Boolean = page.charTyped(event)
+    fun charTyped(event: CharacterEvent): Boolean = searchBar.charTyped(event) || page.charTyped(event)
 
-    fun keyPressed(event: KeyEvent): Boolean = page.keyPressed(event)
+    fun keyPressed(event: KeyEvent): Boolean = searchBar.keyPressed(event) || page.keyPressed(event)
 
-    fun unfocus() = pages.forEach(Page::unfocus)
+    fun unfocus() {
+        searchBar.unfocus()
+        pages.forEach(Page::unfocus)
+    }
+
+    private fun onSearch() {
+        val module = searchBar.bestMatch ?: return
+        sidebar.select(module.category)
+        settingsPage.module = null
+    }
 
     companion object {
         const val WIDTH = 465f

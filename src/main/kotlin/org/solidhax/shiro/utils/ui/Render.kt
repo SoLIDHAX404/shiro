@@ -65,5 +65,7 @@ fun lerpColor(from: Int, to: Int, progress: Float): Int {
     return result
 }
 
+fun fade(color: Int, alpha: Float): Int = lerpColor(color and 0xFFFFFF, color, alpha)
+
 fun lerpColor(from: CascadeGeometricColor, to: CascadeGeometricColor, progress: Float): CascadeGeometricColor =
     CascadeGeometricColor(lerpColor(from.tl, to.tl, progress))

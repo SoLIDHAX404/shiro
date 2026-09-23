@@ -59,9 +59,9 @@ class Animation(private val duration: Long = HOVER_DURATION, initial: Float = 0f
     }
 }
 
-class Animations<K>(private val duration: Long = HOVER_DURATION) {
+class Animations<K>(private val duration: Long = HOVER_DURATION, private val initial: Float = 0f) {
 
     private val animations = HashMap<K, Animation>()
 
-    operator fun get(key: K): Animation = animations.getOrPut(key) { Animation(duration) }
+    operator fun get(key: K): Animation = animations.getOrPut(key) { Animation(duration, initial) }
 }

@@ -12,23 +12,27 @@ import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
 
-class ModuleList(private val category: () -> Category, private val onOpenSettings: (Module) -> Unit) : Page {
+class ModuleList(private val category: () -> Category, private val search: SearchBar, private val onOpenSettings: (Module) -> Unit) : Page {
 
     private val scroll = ScrollArea()
     private val buttons = HashMap<Category, List<ModuleButton>>()
-    private var current: Category? = null
+    private var current: Pair<Category, String>? = null
 
-    private val currentButtons get() = buttons.getOrPut(category()) { ModuleManager.modulesByCategory[category()].orEmpty().map(::ModuleButton) }
+    private val currentButtons: List<ModuleButton>
+        get() = buttons.getOrPut(category()) { ModuleManager.modulesByCategory[category()].orEmpty().map(::ModuleButton) }
+            .filter { search.score(it.module) > 0 }
+            .sortedByDescending { search.score(it.module) }
 
     override fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float, mouseX: Float, mouseY: Float) {
-        if (category() != current) {
-            current = category()
+        if (category() to search.query != current) {
+            current = category() to search.query
             scroll.reset()
         }
 
         val buttons = currentButtons
         if (buttons.isEmpty()) {
-            graphics.text(EMPTY, x + (width - textWidth(EMPTY)) / 2f, y + (height - TEXT_SIZE) / 2f, theme.textMuted)
+            val empty = if (search.searching) NO_RESULTS else EMPTY
+            graphics.text(empty, x + (width - textWidth(empty)) / 2f, y + (height - TEXT_SIZE) / 2f, theme.textMuted)
             return
         }
 
@@ -67,5 +71,6 @@ class ModuleList(private val category: () -> Category, private val onOpenSetting
 
     companion object {
         private const val EMPTY = "No modules in this category yet."
+        private const val NO_RESULTS = "No modules match your search."
     }
 }
