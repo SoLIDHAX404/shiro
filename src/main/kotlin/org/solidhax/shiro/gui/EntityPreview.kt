@@ -1,10 +1,12 @@
 package org.solidhax.shiro.gui
 
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.model.HumanoidModel
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer
 import net.minecraft.client.renderer.entity.state.ArmedEntityRenderState
 import net.minecraft.client.renderer.entity.state.ArmorStandRenderState
+import net.minecraft.client.renderer.entity.state.AvatarRenderState
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState
 import net.minecraft.client.renderer.item.ItemStackRenderState
@@ -19,6 +21,7 @@ import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.HumanoidArm
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.entity.player.PlayerSkin
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
@@ -34,13 +37,22 @@ import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.pow
 
-class EntityPreview(var entity: () -> Entity? = { mc.player }) {
+class EntityPreview(
+    private val entity: () -> Entity? = { mc.player },
+    private val heightScale: () -> Float = { 1f },
+    private val overlay: (GuiGraphicsExtractor, EntityPreview) -> Unit = { _, _ -> },
+    private val setup: EntityPreview.() -> Unit = {}
+) {
+
+    private val initialized by lazy { setup() }
 
     val equipment = EnumMap<EquipmentSlot, ItemStack>(EquipmentSlot::class.java)
 
     var armorStandPose: ArmorStandPose? = null
 
-    var heightScale = 1f
+    var skin: PlayerSkin? = null
+
+    var sitting = false
 
     var autoSpin = true
 
@@ -50,22 +62,30 @@ class EntityPreview(var entity: () -> Entity? = { mc.player }) {
     var blockSize = 0f
         private set
 
+    var x = 0f
+        private set
+
+    var y = 0f
+        private set
+
+    var width = 0f
+        private set
+
+    var height = 0f
+        private set
+
     private var yaw = 0f
     private var pitch = 0f
     private var zoom = 1f
     private var dragging = false
     private var lastInteraction = 0L
 
-    private var x = 0f
-    private var y = 0f
-    private var width = 0f
-    private var height = 0f
-
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float) {
         this.x = x
         this.y = y
         this.width = width
         this.height = height
+        initialized
 
         if (autoSpin && !dragging && Util.getMillis() - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * AnimationManager.deltaSeconds
 
@@ -86,23 +106,26 @@ class EntityPreview(var entity: () -> Entity? = { mc.player }) {
             state.scale = 1f
             if (entity is LivingEntity) applyEquipment(state, entity)
         }
+        if (state is AvatarRenderState) skin?.let { state.skin = it }
         if (state is ArmorStandRenderState) {
             state.yRot = FACING
             state.wiggle = 0f
             armorStandPose?.applyTo(state)
         }
 
-        val modelHeight = state.boundingBoxHeight * heightScale
+        val modelHeight = state.boundingBoxHeight * heightScale()
+        val pivot = modelHeight * if (sitting) SITTING_PIVOT else 0.5f
         val camera = Quaternionf().rotateX(pitch * DEG_TO_RAD)
         val rotation = Quaternionf().rotateZ(PI.toFloat()).mul(camera).rotateY(-yaw * DEG_TO_RAD)
-        val translation = rotation.transform(Vector3f(0f, modelHeight / 2f, 0f)).negate()
+        val translation = rotation.transform(Vector3f(0f, pivot, 0f)).negate()
         blockSize = height * FIT * zoom / max(state.boundingBoxHeight, state.boundingBoxWidth)
-        modelTop = y + (height - modelHeight * blockSize) / 2f
+        modelTop = y + height / 2f - (modelHeight - pivot) * blockSize
 
         val pose = graphics.pose()
         val min = pose.transformPosition(Vector2f(x + 1f, y + 1f))
         val max = pose.transformPosition(Vector2f(x + width - 1f, y + height - 1f))
         graphics.entity(state, blockSize * pose.m00(), translation, rotation, camera, min.x.toInt(), min.y.toInt(), max.x.toInt(), max.y.toInt())
+        overlay(graphics, this)
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, doubleClick: Boolean): Boolean {
@@ -154,6 +177,7 @@ class EntityPreview(var entity: () -> Entity? = { mc.player }) {
             state.legsEquipment = armor(EquipmentSlot.LEGS)
             state.feetEquipment = armor(EquipmentSlot.FEET)
             state.isUsingItem = false
+            state.isPassenger = sitting
         }
 
         if (state is ArmedEntityRenderState) {
@@ -180,7 +204,8 @@ class EntityPreview(var entity: () -> Entity? = { mc.player }) {
 
     companion object {
         private const val FACING = 180f
-        private const val FIT = 0.684f
+        private const val FIT = 0.55f
+        private const val SITTING_PIVOT = 0.66f
         private const val ROTATE_SPEED = 1.2f
         private const val SPIN_SPEED = 20f
         private const val IDLE_DELAY_MS = 2000L
@@ -216,16 +241,22 @@ data class ArmorStandPose(
     }
 }
 
-class DummyEntity<T : Entity>(private val type: EntityType<T>, private val setup: (T) -> Unit = {}) : () -> T? {
+class DummyEntity<T : Entity>(private val create: (ClientLevel) -> T?) : () -> T? {
+
+    constructor(type: EntityType<T>) : this({ type.create(it, EntitySpawnReason.LOAD) })
 
     private var entity: T? = null
 
     override fun invoke(): T? {
         val level = mc.level ?: return null
         entity?.takeIf { it.level() === level }?.let { return it }
-        return type.create(level, EntitySpawnReason.LOAD)?.also {
-            setup(it)
+        return create(level)?.also {
+            it.id = nextId--
             entity = it
         }
+    }
+
+    private companion object {
+        var nextId = -1
     }
 }

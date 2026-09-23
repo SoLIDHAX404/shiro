@@ -4,10 +4,12 @@ import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.core.ClientAsset
 import net.minecraft.world.entity.player.PlayerSkin
 import org.solidhax.shiro.Shiro.mc
+import org.solidhax.shiro.gui.EntityPreview
 import org.solidhax.shiro.gui.settings.Setting.Companion.withDependency
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.NumberSetting
+import org.solidhax.shiro.gui.settings.impl.PreviewSetting
 import org.solidhax.shiro.gui.settings.impl.StringSetting
 import org.solidhax.shiro.utils.ui.lerpColor
 import java.util.Optional
@@ -28,7 +30,9 @@ object CosmeticsManager {
 
     private val cape = CapeSetting("Cape")
 
-    val settings = listOf(displayNameDropdown, name, startColor, endColor, sizeDropdown, width, height, depth, cape)
+    private val preview = PreviewSetting("Preview", EntityPreview(heightScale = { heightScale }, overlay = ::drawNameTag))
+
+    val settings = listOf(displayNameDropdown, name, startColor, endColor, sizeDropdown, width, height, depth, cape, preview)
 
     val displayName: String get() = name.value.ifBlank { mc.user.name }
 

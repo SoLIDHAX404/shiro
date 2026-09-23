@@ -9,6 +9,7 @@ import foo.starred.cascade.graphics.geometry.CascadeGeometricOffset
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
+import org.solidhax.shiro.cosmetics.CosmeticsManager
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.text
@@ -16,7 +17,7 @@ import org.solidhax.shiro.utils.ui.text
 class Panel(private val title: String) {
 
     private val sidebar = Sidebar()
-    private val profilePage = ProfilePage()
+    private val profilePage = SettingList(CosmeticsManager.settings)
     private val settingsPage = SettingsPage()
     private val moduleList = ModuleList({ sidebar.selected }) { settingsPage.module = it }
     private val pages = listOf(profilePage, settingsPage, moduleList)

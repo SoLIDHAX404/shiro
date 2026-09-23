@@ -21,6 +21,7 @@ import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.KeybindSetting
 import org.solidhax.shiro.gui.settings.impl.NumberSetting
+import org.solidhax.shiro.gui.settings.impl.PreviewSetting
 import org.solidhax.shiro.gui.settings.impl.RangeSetting
 import org.solidhax.shiro.gui.settings.impl.SelectorSetting
 import org.solidhax.shiro.gui.settings.impl.StringSetting
@@ -34,7 +35,7 @@ import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
 import kotlin.math.PI
 
-class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding: Float = PADDING) : Page {
+class SettingList(var settings: Collection<Setting<*>> = emptyList(), private val topPadding: Float = PADDING) : Page {
 
     private val scroll = ScrollArea(topPadding)
     private val textFields = HashMap<StringSetting, TextField>()
@@ -44,6 +45,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
     private val pressAnimations = Animations<Setting<*>>(PRESS_DURATION)
 
     private var visible = emptyList<Setting<*>>()
+    private var preview: EntityPreview? = null
     private var dragging: Setting<*>? = null
     private var drag: ((Float, Float) -> Unit)? = null
     private var listening: KeybindSetting? = null
@@ -53,16 +55,19 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
     private val right get() = left + inner
 
     override fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float, mouseX: Float, mouseY: Float) {
-        visible = settings.filter { it.isVisible }
+        visible = settings.filter { it.isVisible && it !is PreviewSetting }
+        preview = settings.firstNotNullOfOrNull { (it as? PreviewSetting)?.takeIf(Setting<*>::isVisible)?.value }
         var contentHeight = -SPACING
         forEachCard { setting, _, _, gap -> contentHeight += height(setting) + gap }
 
+        val listWidth = if (preview == null) width else (width + PADDING) / 2f
         val hovered = scroll.isHovered(mouseX, mouseY)
-        scroll.draw(graphics, x, y, width, height, contentHeight, mouseX, mouseY) {
+        scroll.draw(graphics, x, y, listWidth, height, contentHeight, mouseX, mouseY) {
             forEachCard { setting, cardY, corners, _ ->
                 drawCard(graphics, setting, cardY, corners, if (hovered) mouseX else -1f, if (hovered) mouseY else -1f)
             }
         }
+        preview?.let { drawPreview(graphics, it, x + listWidth, y + topPadding, width - listWidth - PADDING, height - topPadding - PADDING - HINT_AREA) }
     }
 
     override fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
@@ -73,7 +78,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
         }
         if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
         unfocus()
-        if (scroll.mouseClicked(mouseX, mouseY)) return true
+        if (scroll.mouseClicked(mouseX, mouseY) || preview?.mouseClicked(mouseX, mouseY, doubleClick) == true) return true
         if (!scroll.isHovered(mouseX, mouseY)) return false
 
         forEachCard { setting, cardY, _, _ ->
@@ -88,17 +93,19 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
             it(mouseX, mouseY)
             return true
         }
-        return textFields.values.any { it.drag(mouseX) }
+        return textFields.values.any { it.drag(mouseX) } || preview?.mouseDragged(deltaX, deltaY) == true
     }
 
     override fun mouseReleased(button: Int) {
         if (button != InputConstants.MOUSE_BUTTON_LEFT) return
         scroll.mouseReleased()
+        preview?.mouseReleased()
         dragging = null
         drag = null
     }
 
-    override fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean = scroll.mouseScrolled(mouseX, mouseY, amount)
+    override fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean =
+        scroll.mouseScrolled(mouseX, mouseY, amount) || preview?.mouseScrolled(mouseX, mouseY, amount) == true
 
     override fun charTyped(event: CharacterEvent): Boolean = textFields.values.any { it.charTyped(event) }
 
@@ -244,6 +251,12 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
         Slider.draw(graphics, left, controlY(y), inner, start, end, active)
     }
 
+    private fun drawPreview(graphics: GuiGraphicsExtractor, preview: EntityPreview, x: Float, y: Float, width: Float, height: Float) {
+        graphics.roundedRectangle(x, y, width, height, theme.card, Radius.LARGE)
+        preview.draw(graphics, x, y, width, height)
+        graphics.text(HINT, x + (width - textWidth(HINT)) / 2f, y + height + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
+    }
+
     private fun drawKeybind(graphics: GuiGraphicsExtractor, setting: KeybindSetting, textY: Float, hover: Float) {
         val label = when {
             listening == setting -> LISTENING
@@ -301,6 +314,8 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), topPadding
         private const val PRESS_SHRINK = 0.08f
         private const val QUARTER_TURN = (PI / 2.0).toFloat()
         private const val LISTENING = "..."
+        private const val HINT = "Drag to rotate • Scroll to zoom"
+        private const val HINT_AREA = 14f
         private const val UNBOUND = "None"
 
         private const val SWATCH_WIDTH = 18f

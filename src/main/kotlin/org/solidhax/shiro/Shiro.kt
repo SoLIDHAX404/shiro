@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.minecraft.client.Minecraft
 import org.solidhax.shiro.commands.mainCommand
 import org.solidhax.shiro.features.ModuleManager
+import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.misc.TestModule
 
 object Shiro : ClientModInitializer {
@@ -15,6 +16,7 @@ object Shiro : ClientModInitializer {
     override fun onInitializeClient() {
         ModuleManager.registerModules(
             TestModule,
+            CorpseESP,
         )
 
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
