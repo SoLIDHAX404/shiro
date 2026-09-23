@@ -5,33 +5,20 @@ import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangl
 import foo.starred.cascade.graphics.extensions.scissor.scissor
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState
-import net.minecraft.util.Util
-import net.minecraft.world.entity.Entity
-import org.joml.Quaternionf
-import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.cosmetics.CosmeticsManager
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.Page.Companion.PADDING
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.TEXT_SIZE
-import org.solidhax.shiro.utils.ui.animation.AnimationManager
-import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
-import kotlin.math.PI
-import kotlin.math.pow
 
 class ProfilePage private constructor(private val list: SettingList) : Page by list {
 
     constructor() : this(SettingList(CosmeticsManager.settings))
 
-    private var yaw = 0f
-    private var pitch = 0f
-    private var zoom = 1f
-    private var dragging = false
-    private var lastInteraction = 0L
+    private val preview = EntityPreview()
 
     private var previewX = 0f
     private var previewY = 0f
@@ -47,81 +34,25 @@ class ProfilePage private constructor(private val list: SettingList) : Page by l
         previewHeight = height - PADDING * 2f - HINT_AREA
 
         graphics.roundedRectangle(previewX, previewY, previewWidth, previewHeight, theme.card, Radius.LARGE)
-        if (!dragging && Util.getMillis() - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * AnimationManager.deltaSeconds
-        mc.player?.let { drawEntity(graphics, it) }
+        preview.heightScale = CosmeticsManager.heightScale
+        preview.draw(graphics, previewX, previewY, previewWidth, previewHeight)
+        if (mc.player != null) drawNameTag(graphics, preview.modelTop - NAMETAG_OFFSET * preview.blockSize - TEXT_SIZE)
         graphics.text(HINT, previewX + (previewWidth - textWidth(HINT)) / 2f, previewY + previewHeight + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
     }
 
-    override fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
-        if (list.mouseClicked(mouseX, mouseY, button, doubleClick)) return true
-        if (button != InputConstants.MOUSE_BUTTON_LEFT || !isPreviewHovered(mouseX, mouseY)) return false
-        if (doubleClick) {
-            yaw = 0f
-            pitch = 0f
-            zoom = 1f
-        }
-        dragging = true
-        lastInteraction = Util.getMillis()
-        return true
-    }
+    override fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean =
+        list.mouseClicked(mouseX, mouseY, button, doubleClick) || (button == InputConstants.MOUSE_BUTTON_LEFT && preview.mouseClicked(mouseX, mouseY, doubleClick))
 
-    override fun mouseDragged(mouseX: Float, mouseY: Float, button: Int, deltaX: Float, deltaY: Float): Boolean {
-        if (list.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true
-        if (!dragging) return false
-        yaw -= deltaX * ROTATE_SPEED
-        pitch = (pitch - deltaY * ROTATE_SPEED).coerceIn(-MAX_PITCH, MAX_PITCH)
-        lastInteraction = Util.getMillis()
-        return true
-    }
+    override fun mouseDragged(mouseX: Float, mouseY: Float, button: Int, deltaX: Float, deltaY: Float): Boolean =
+        list.mouseDragged(mouseX, mouseY, button, deltaX, deltaY) || preview.mouseDragged(deltaX, deltaY)
 
     override fun mouseReleased(button: Int) {
         list.mouseReleased(button)
-        if (button != InputConstants.MOUSE_BUTTON_LEFT || !dragging) return
-        dragging = false
-        lastInteraction = Util.getMillis()
+        if (button == InputConstants.MOUSE_BUTTON_LEFT) preview.mouseReleased()
     }
 
-    override fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean {
-        if (list.mouseScrolled(mouseX, mouseY, amount)) return true
-        if (!isPreviewHovered(mouseX, mouseY)) return false
-        zoom = (zoom * ZOOM_STEP.pow(amount)).coerceIn(MIN_ZOOM, MAX_ZOOM)
-        lastInteraction = Util.getMillis()
-        return true
-    }
-
-    private fun drawEntity(graphics: GuiGraphicsExtractor, entity: Entity) {
-        val state = mc.entityRenderDispatcher.getRenderer(entity).createRenderState(entity, 1f)
-        state.shadowPieces.clear()
-        state.outlineColor = 0
-
-        if (state is LivingEntityRenderState) {
-            state.bodyRot = 180f + yaw
-            state.yRot = 0f
-            state.xRot = 0f
-            state.boundingBoxWidth /= state.scale
-            state.boundingBoxHeight /= state.scale
-            state.scale = 1f
-        }
-
-        val modelHeight = state.boundingBoxHeight * CosmeticsManager.heightScale
-        val scale = previewHeight * BASE_SCALE * zoom
-        val camera = Quaternionf().rotateX(pitch * DEG_TO_RAD)
-        val rotation = Quaternionf().rotateZ(PI.toFloat()).mul(camera)
-        val translation = rotation.transform(Vector3f(0f, modelHeight / 2f, 0f)).negate()
-
-        drawNameTag(graphics, previewY + previewHeight / 2f - modelHeight * scale / 2f - NAMETAG_OFFSET * scale - TEXT_SIZE)
-
-        val panelScale = ClickGUI.panelScale
-        val centerX = mc.window.guiScaledWidth / 2f
-        val centerY = mc.window.guiScaledHeight / 2f
-        fun scaledX(value: Float) = (centerX + (value - centerX) * panelScale).toInt()
-        fun scaledY(value: Float) = (centerY + (value - centerY) * panelScale).toInt()
-
-        graphics.entity(
-            state, scale * panelScale, translation, rotation, camera,
-            scaledX(previewX + 1f), scaledY(previewY + 1f), scaledX(previewX + previewWidth - 1f), scaledY(previewY + previewHeight - 1f)
-        )
-    }
+    override fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean =
+        list.mouseScrolled(mouseX, mouseY, amount) || preview.mouseScrolled(mouseX, mouseY, amount)
 
     private fun drawNameTag(graphics: GuiGraphicsExtractor, textY: Float) {
         val name = CosmeticsManager.displayName
@@ -141,23 +72,10 @@ class ProfilePage private constructor(private val list: SettingList) : Page by l
         }
     }
 
-    private fun isPreviewHovered(mouseX: Float, mouseY: Float): Boolean =
-        isAreaHovered(mouseX, mouseY, previewX, previewY, previewWidth, previewHeight)
-
     companion object {
         private const val NAMETAG_OFFSET = 0.22f
         private const val NAMETAG_PADDING = 4f
         private const val HINT_AREA = 14f
         private const val HINT = "Drag to rotate • Scroll to zoom"
-
-        private const val BASE_SCALE = 0.38f
-        private const val ROTATE_SPEED = 1.2f
-        private const val SPIN_SPEED = 20f
-        private const val IDLE_DELAY_MS = 2000L
-        private const val MAX_PITCH = 80f
-        private const val ZOOM_STEP = 1.1f
-        private const val MIN_ZOOM = 0.5f
-        private const val MAX_ZOOM = 4f
-        private const val DEG_TO_RAD = (PI / 180.0).toFloat()
     }
 }

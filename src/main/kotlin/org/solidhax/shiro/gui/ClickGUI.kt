@@ -19,9 +19,6 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
     private val openAnimation = Animation(OPEN_DURATION)
     private var closing = false
 
-    var panelScale = 1f
-        private set
-
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
         AnimationManager.update()
 
@@ -31,10 +28,9 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
             mc.gui.setScreen(null)
             return
         }
-        panelScale = MIN_SCALE + (1f - MIN_SCALE) * progress
 
         graphics.pose().pushMatrix()
-        graphics.pose().scaleAround(panelScale, width / 2f, height / 2f)
+        graphics.pose().scaleAround(MIN_SCALE + (1f - MIN_SCALE) * progress, width / 2f, height / 2f)
         panel.draw(graphics, panelX, panelY, mouseX.toFloat(), mouseY.toFloat())
         graphics.pose().popMatrix()
 
