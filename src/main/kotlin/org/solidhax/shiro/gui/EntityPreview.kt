@@ -1,5 +1,7 @@
 package org.solidhax.shiro.gui
 
+import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
+import foo.starred.cascade.graphics.extensions.scissor.scissor
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.model.HumanoidModel
@@ -30,7 +32,15 @@ import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
+import org.solidhax.shiro.gui.settings.impl.AnchorSetting
+import org.solidhax.shiro.utils.ui.Bounds
+import org.solidhax.shiro.utils.ui.BoxAnchor
+import org.solidhax.shiro.utils.ui.NameTagSegments
+import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.isAreaHovered
+import org.solidhax.shiro.utils.ui.nameTag
+import org.solidhax.shiro.utils.ui.nameTagAnchor
+import org.solidhax.shiro.utils.ui.nameTagBounds
 import java.util.EnumMap
 import kotlin.math.PI
 import kotlin.math.max
@@ -39,7 +49,7 @@ import kotlin.math.pow
 class EntityPreview(
     private val entity: () -> Entity? = { mc.player },
     private val heightScale: () -> Float = { 1f },
-    private val overlay: (GuiGraphicsExtractor, EntityPreview) -> Unit = { _, _ -> },
+    val label: PreviewLabel? = null,
     private val setup: EntityPreview.() -> Unit = {}
 ) {
 
@@ -55,12 +65,6 @@ class EntityPreview(
 
     var autoSpin = true
 
-    var modelTop = 0f
-        private set
-
-    var blockSize = 0f
-        private set
-
     var x = 0f
         private set
 
@@ -72,6 +76,17 @@ class EntityPreview(
 
     var height = 0f
         private set
+
+    /**
+     * The on-screen rectangle covering the entity's bounding box, as drawn this frame.
+     */
+    var bounds = Bounds(0f, 0f, 0f, 0f)
+        private set
+
+    private var labelBounds: Bounds? = null
+    private var draggingLabel = false
+    private val labelMouse = Vector2f()
+    private val labelGrab = Vector2f()
 
     private var yaw = 0f
     private var pitch = 0f
@@ -121,18 +136,55 @@ class EntityPreview(
         val camera = Quaternionf().rotateX(pitch * DEG_TO_RAD)
         val rotation = Quaternionf().rotateZ(PI.toFloat()).mul(camera).rotateY(-yaw * DEG_TO_RAD)
         val translation = rotation.transform(Vector3f(0f, pivot, 0f)).negate()
-        blockSize = height * FIT * zoom / max(state.boundingBoxHeight, state.boundingBoxWidth)
-        modelTop = y + height / 2f - (modelHeight - pivot) * blockSize
+        val blockSize = height * FIT * zoom / max(state.boundingBoxHeight, state.boundingBoxWidth)
+        bounds = projectBounds(state.boundingBoxWidth / 2f, modelHeight, pivot, rotation, blockSize)
 
         val pose = graphics.pose()
         val min = pose.transformPosition(Vector2f(x + 1f, y + 1f))
         val max = pose.transformPosition(Vector2f(x + width - 1f, y + height - 1f))
         graphics.entity(state, blockSize * pose.m00(), translation, rotation, camera, min.x.toInt(), min.y.toInt(), max.x.toInt(), max.y.toInt())
-        overlay(graphics, this)
+        drawLabel(graphics)
+    }
+
+    // the preview is orthographic, so each bounding box corner lands at the preview center plus its rotated offset from the pivot
+    private fun projectBounds(halfWidth: Float, modelHeight: Float, pivot: Float, rotation: Quaternionf, blockSize: Float): Bounds {
+        val centerX = x + width / 2f
+        val centerY = y + height / 2f
+        val corners = ArrayList<Vector2f>(8)
+        for (cornerX in floatArrayOf(-halfWidth, halfWidth)) for (cornerY in floatArrayOf(0f, modelHeight)) for (cornerZ in floatArrayOf(-halfWidth, halfWidth)) {
+            val offset = rotation.transform(Vector3f(cornerX, cornerY - pivot, cornerZ))
+            corners += Vector2f(centerX + offset.x * blockSize, centerY + offset.y * blockSize)
+        }
+        return Bounds.of(corners)
+    }
+
+    private fun drawLabel(graphics: GuiGraphicsExtractor) {
+        val label = label ?: return
+        val segments = label.segments()
+        if (segments.isEmpty()) {
+            labelBounds = null
+            return
+        }
+        val tag = nameTagBounds(bounds, label.anchor?.value ?: BoxAnchor.ABOVE, segments)
+        labelBounds = tag
+
+        graphics.scissor(x, y, width, height) {
+            if (draggingLabel) graphics.hollowRectangle(bounds.left, bounds.top, bounds.width, bounds.height, 1f, ClickGUI.theme.divider, Radius.SMALL)
+            graphics.nameTag(tag, segments)
+        }
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, doubleClick: Boolean): Boolean {
         if (!isHovered(mouseX, mouseY)) return false
+        val anchor = label?.anchor
+        val tag = labelBounds
+        if (anchor != null && tag != null && tag.contains(mouseX, mouseY)) {
+            if (doubleClick) anchor.value = anchor.default
+            draggingLabel = true
+            labelMouse.set(mouseX, mouseY)
+            labelGrab.set(tag.centerX - mouseX, tag.centerY - mouseY)
+            return true
+        }
         if (doubleClick) {
             yaw = 0f
             pitch = 0f
@@ -144,6 +196,12 @@ class EntityPreview(
     }
 
     fun mouseDragged(deltaX: Float, deltaY: Float): Boolean {
+        if (draggingLabel) {
+            val label = label ?: return false
+            labelMouse.add(deltaX, deltaY)
+            label.anchor?.value = nameTagAnchor(bounds, label.segments(), labelMouse.x + labelGrab.x, labelMouse.y + labelGrab.y)
+            return true
+        }
         if (!dragging) return false
         yaw -= deltaX * ROTATE_SPEED
         pitch = (pitch - deltaY * ROTATE_SPEED).coerceIn(-MAX_PITCH, MAX_PITCH)
@@ -152,6 +210,7 @@ class EntityPreview(
     }
 
     fun mouseReleased() {
+        draggingLabel = false
         if (!dragging) return
         dragging = false
         lastInteraction = Util.getMillis()
@@ -264,3 +323,9 @@ class DummyEntity<T : Entity>(private val create: (ClientLevel) -> T?) : () -> T
         var nextId = -1
     }
 }
+
+/**
+ * A name tag drawn around the preview's bounding box. With an [anchor] it can be dragged around the box in the preview,
+ * which stores its position there; without one it stays above the entity.
+ */
+class PreviewLabel(val anchor: AnchorSetting? = null, val segments: () -> NameTagSegments)

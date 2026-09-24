@@ -272,7 +272,8 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     private fun drawPreview(graphics: GuiGraphicsExtractor, preview: EntityPreview, x: Float, y: Float, width: Float, height: Float) {
         graphics.roundedRectangle(x, y, width, height, theme.card, Radius.LARGE)
         preview.draw(graphics, x, y, width, height)
-        graphics.text(HINT, x + (width - textWidth(HINT)) / 2f, y + height + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
+        val hint = if (preview.label?.anchor != null) LABEL_HINT else HINT
+        graphics.text(hint, x + (width - textWidth(hint)) / 2f, y + height + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
     }
 
     private fun drawKeybind(graphics: GuiGraphicsExtractor, setting: KeybindSetting, textY: Float, hover: Float) {
@@ -336,6 +337,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         private const val QUARTER_TURN = (PI / 2.0).toFloat()
         private const val LISTENING = "..."
         private const val HINT = "Drag to rotate • Scroll to zoom"
+        private const val LABEL_HINT = "Drag to rotate or move the tag • Scroll to zoom"
         private const val HINT_AREA = 14f
         private const val UNBOUND = "None"
 

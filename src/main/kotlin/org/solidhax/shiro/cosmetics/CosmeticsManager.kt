@@ -5,6 +5,7 @@ import net.minecraft.core.ClientAsset
 import net.minecraft.world.entity.player.PlayerSkin
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.EntityPreview
+import org.solidhax.shiro.gui.PreviewLabel
 import org.solidhax.shiro.gui.settings.Setting.Companion.withDependency
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
@@ -30,7 +31,7 @@ object CosmeticsManager {
 
     private val cape = CapeSetting("Cape")
 
-    private val preview = PreviewSetting("Preview", EntityPreview(heightScale = { heightScale }, overlay = ::drawNameTag))
+    private val preview = PreviewSetting("Preview", EntityPreview(heightScale = { heightScale }, label = PreviewLabel(segments = ::nameTagSegments)))
 
     val settings = listOf(displayNameDropdown, name, startColor, endColor, sizeDropdown, width, height, depth, cape, preview)
 
