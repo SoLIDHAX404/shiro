@@ -35,7 +35,8 @@ fun GuiGraphicsExtractor.text(text: String, x: Float, y: Float, color: CascadeGe
 fun textWidth(text: String, size: Float = TEXT_SIZE): Float = font.width(text, size)
 
 fun GuiGraphicsExtractor.icon(id: Identifier, x: Float, y: Float, size: Float, color: CascadeGeometricColor, rotation: Float = 0f) {
-    val pose = if (rotation == 0f) null else Matrix3x2f().rotateAbout(rotation, x + size / 2f, y + size / 2f)
+    // rotate on top of the current pose; an explicit pose replaces it, which would drop outer transforms like the ClickGUI open/close scale
+    val pose = if (rotation == 0f) null else Matrix3x2f(pose()).rotateAbout(rotation, x + size / 2f, y + size / 2f)
     image(svgTexture(id, size.toInt()), x, y, size, size, color = color, pose = pose)
 }
 
