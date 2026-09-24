@@ -48,10 +48,10 @@ object ModuleManager {
         for (config in configs) config.save()
     }
 
-    fun renderHud(graphics: GuiGraphicsExtractor, @Suppress("UNUSED_PARAMETER") deltaTracker: DeltaTracker) {
+    fun renderHud(graphics: GuiGraphicsExtractor, deltaTracker: DeltaTracker) {
         if (mc.level == null || mc.player == null || mc.gui.screen() == HudEditor || mc.gui.hud.isHidden) return
         AnimationManager.update()
-        HudRenderEvent(graphics).postAndCatch()
+        HudRenderEvent(graphics, deltaTracker.getGameTimeDeltaPartialTick(true)).postAndCatch()
         for (setting in hudSettings) {
             if (setting.isEnabled) setting.value.draw(graphics, false)
         }

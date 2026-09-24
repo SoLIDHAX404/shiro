@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer
 import net.minecraft.client.renderer.entity.state.ArmedEntityRenderState
 import net.minecraft.client.renderer.entity.state.ArmorStandRenderState
 import net.minecraft.client.renderer.entity.state.AvatarRenderState
+import net.minecraft.client.renderer.entity.state.EntityRenderState
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState
 import net.minecraft.client.renderer.item.ItemStackRenderState
@@ -28,11 +29,13 @@ import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.AbstractSkullBlock
+import net.minecraft.world.phys.AABB
 import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
+import org.solidhax.shiro.utils.render.ModelBounds
 import org.solidhax.shiro.utils.ui.Bounds
 import org.solidhax.shiro.utils.ui.LabelPosition
 import org.solidhax.shiro.utils.ui.NameTagSegments
@@ -48,7 +51,6 @@ import kotlin.math.pow
 
 class EntityPreview(
     private val entity: () -> Entity? = { mc.player },
-    private val heightScale: () -> Float = { 1f },
     val label: PreviewLabel? = null,
     private val setup: EntityPreview.() -> Unit = {}
 ) {
@@ -108,7 +110,8 @@ class EntityPreview(
         if (autoSpin && !dragging && now - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * deltaSeconds
 
         val entity = entity() ?: return
-        val state = mc.entityRenderDispatcher.getRenderer(entity).createRenderState(entity, 1f)
+        val renderer = mc.entityRenderDispatcher.getRenderer(entity)
+        val state = renderer.createRenderState(entity, 1f)
         state.shadowPieces.clear()
         state.outlineColor = 0
         state.nameTag = null
@@ -131,13 +134,14 @@ class EntityPreview(
             armorStandPose?.applyTo(state)
         }
 
-        val modelHeight = state.boundingBoxHeight * heightScale()
-        val pivot = modelHeight * if (sitting) SITTING_PIVOT else 0.5f
+        // framed around the posed model, so sitting or posed entities stay centered and fit the preview
+        val box = ModelBounds.of(renderer, state) ?: hitbox(state)
+        val center = box.center.toVector3f()
         val camera = Quaternionf().rotateX(pitch * DEG_TO_RAD)
         val rotation = Quaternionf().rotateZ(PI.toFloat()).mul(camera).rotateY(-yaw * DEG_TO_RAD)
-        val translation = rotation.transform(Vector3f(0f, pivot, 0f)).negate()
-        val blockSize = height * FIT * zoom / max(state.boundingBoxHeight, state.boundingBoxWidth)
-        bounds = projectBounds(state.boundingBoxWidth / 2f, modelHeight, pivot, rotation, blockSize)
+        val translation = rotation.transform(Vector3f(center)).negate()
+        val blockSize = height * FIT * zoom / max(box.ysize, max(box.xsize, box.zsize)).toFloat()
+        bounds = projectBounds(box, center, rotation, blockSize)
 
         val pose = graphics.pose()
         val min = pose.transformPosition(Vector2f(x + 1f, y + 1f))
@@ -146,13 +150,18 @@ class EntityPreview(
         drawLabel(graphics)
     }
 
-    // the preview is orthographic, so each bounding box corner lands at the preview center plus its rotated offset from the pivot
-    private fun projectBounds(halfWidth: Float, modelHeight: Float, pivot: Float, rotation: Quaternionf, blockSize: Float): Bounds {
+    private fun hitbox(state: EntityRenderState): AABB {
+        val halfWidth = state.boundingBoxWidth / 2.0
+        return AABB(-halfWidth, 0.0, -halfWidth, halfWidth, state.boundingBoxHeight.toDouble(), halfWidth)
+    }
+
+    // the preview is orthographic and centered on the box, so each corner lands at the preview center plus its rotated offset
+    private fun projectBounds(box: AABB, center: Vector3f, rotation: Quaternionf, blockSize: Float): Bounds {
         val centerX = x + width / 2f
         val centerY = y + height / 2f
         val corners = ArrayList<Vector2f>(8)
-        for (cornerX in floatArrayOf(-halfWidth, halfWidth)) for (cornerY in floatArrayOf(0f, modelHeight)) for (cornerZ in floatArrayOf(-halfWidth, halfWidth)) {
-            val offset = rotation.transform(Vector3f(cornerX, cornerY - pivot, cornerZ))
+        for (cornerX in doubleArrayOf(box.minX, box.maxX)) for (cornerY in doubleArrayOf(box.minY, box.maxY)) for (cornerZ in doubleArrayOf(box.minZ, box.maxZ)) {
+            val offset = rotation.transform(Vector3f(cornerX.toFloat(), cornerY.toFloat(), cornerZ.toFloat()).sub(center))
             corners += Vector2f(centerX + offset.x * blockSize, centerY + offset.y * blockSize)
         }
         return Bounds.of(corners)
@@ -268,7 +277,6 @@ class EntityPreview(
     companion object {
         private const val FACING = 180f
         private const val FIT = 0.55f
-        private const val SITTING_PIVOT = 0.66f
         private const val ROTATE_SPEED = 1.2f
         private const val SPIN_SPEED = 20f
         private const val MAX_DELTA = 0.1f

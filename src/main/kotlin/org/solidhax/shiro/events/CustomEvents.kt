@@ -32,7 +32,7 @@ abstract class PacketEvent(val packet: Packet<*>) : CancellableEvent() {
 
 object LocationChangeEvent : Event
 
-class HudRenderEvent(val graphics: GuiGraphicsExtractor) : Event
+class HudRenderEvent(val graphics: GuiGraphicsExtractor, val partialTick: Float) : Event
 
 class EntityGlowEvent(val entity: Entity) : Event {
     var color: Int? = null

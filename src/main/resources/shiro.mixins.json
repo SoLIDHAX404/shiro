@@ -11,7 +11,9 @@
     "AvatarRendererMixin",
     "ConnectionMixin",
     "EntityRendererMixin",
-    "LevelExtractorMixin"
+    "LevelExtractorMixin",
+    "LivingEntityRendererInvoker",
+    "ModelPartAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

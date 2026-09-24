@@ -27,6 +27,7 @@ import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
+import org.solidhax.shiro.utils.render.ModelBounds
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.ui.NameTagSegments
@@ -79,7 +80,7 @@ object CorpseESP : Module(
             for ((entity, type) in corpses) {
                 val segments = nameTagSegments(type, player.distanceTo(entity).roundToInt())
                 if (segments.isEmpty()) continue
-                graphics.nameTag(screenBounds(entity.boundingBox) ?: continue, nameTagPosition.value, segments)
+                graphics.nameTag(screenBounds(ModelBounds.of(entity, partialTick)) ?: continue, nameTagPosition.value, segments)
             }
         }
 

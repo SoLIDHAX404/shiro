@@ -31,7 +31,7 @@ object CosmeticsManager {
 
     private val cape = CapeSetting("Cape")
 
-    private val preview = PreviewSetting("Preview", EntityPreview(heightScale = { heightScale }, label = PreviewLabel(segments = ::nameTagSegments)))
+    private val preview = PreviewSetting("Preview", EntityPreview(label = PreviewLabel(segments = ::nameTagSegments)))
 
     val settings = listOf(displayNameDropdown, name, startColor, endColor, sizeDropdown, width, height, depth, cape, preview)
 
