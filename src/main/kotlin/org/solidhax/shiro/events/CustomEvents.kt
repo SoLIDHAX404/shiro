@@ -6,6 +6,7 @@ import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.network.protocol.Packet
 import org.solidhax.shiro.events.core.CancellableEvent
 import org.solidhax.shiro.events.core.Event
+import org.solidhax.shiro.utils.render.RenderConsumer
 
 interface TickEvent : Event {
     class End(val level: ClientLevel) : TickEvent
@@ -18,7 +19,7 @@ interface LevelEvent : Event {
 }
 
 abstract class RenderEvent(open val context: AbstractLevelRenderContext) : Event {
-    class Extract(override val context: LevelRenderContext) : RenderEvent(context)
+    class Extract(override val context: LevelRenderContext, val consumer: RenderConsumer) : RenderEvent(context)
     class Last(override val context: LevelRenderContext) : RenderEvent(context)
 }
 

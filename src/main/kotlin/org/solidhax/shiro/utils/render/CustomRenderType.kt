@@ -1,0 +1,30 @@
+// Adapted from Odin (https://github.com/odtheking/Odin), Copyright (c) 2025, odtheking, BSD 3-Clause License.
+package org.solidhax.shiro.utils.render
+
+import net.minecraft.client.renderer.rendertype.LayeringTransform
+import net.minecraft.client.renderer.rendertype.RenderSetup
+import net.minecraft.client.renderer.rendertype.RenderType
+
+object CustomRenderType {
+
+    val LINES_ESP: RenderType = RenderType.create(
+        "lines-esp",
+        RenderSetup.builder(CustomRenderPipelines.LINES_ESP)
+            .setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
+            .createRenderSetup()
+    )
+
+    val LINES_TRANSLUCENT_ESP: RenderType = RenderType.create(
+        "lines-translucent-esp",
+        RenderSetup.builder(CustomRenderPipelines.LINES_TRANSLUCENT_ESP)
+            .createRenderSetup()
+    )
+
+    val QUADS_ESP: RenderType = RenderType.create(
+        "quads-esp",
+        RenderSetup.builder(CustomRenderPipelines.QUADS_ESP)
+            .sortOnUpload()
+            .setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
+            .createRenderSetup()
+    )
+}
