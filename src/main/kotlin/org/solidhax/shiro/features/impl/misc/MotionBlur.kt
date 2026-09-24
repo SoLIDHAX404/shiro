@@ -27,7 +27,6 @@ object MotionBlur : Module(
     private val maxSamples by NumberSetting("Max Samples", 64, 8, 128, 1, desc = "The most samples taken along fast motion. More looks smoother but costs more.")
 
     private val previousView = Matrix4f()
-    private val previousProjection = Matrix4f()
     private var previousCamera: Vec3? = null
     private var lastFrameNanos = 0L
 
@@ -45,19 +44,16 @@ object MotionBlur : Module(
             return
         }
         val lastCamera = previousCamera
-        if (lastCamera != null && lastCamera.distanceToSqr(camera.pos) < MAX_CAMERA_JUMP_SQR && !isStill(camera, projection, lastCamera)) {
+        if (lastCamera != null && lastCamera.distanceToSqr(camera.pos) < MAX_CAMERA_JUMP_SQR && !isStill(camera, lastCamera)) {
             apply(allocator, camera, projection, lastCamera, strength.toFloat() * frameRateScale(frameSeconds))
         }
 
         previousView.set(camera.viewRotationMatrix)
-        previousProjection.set(projection)
         previousCamera = camera.pos
     }
 
-    private fun isStill(camera: CameraRenderState, projection: Matrix4fc, lastCamera: Vec3): Boolean =
-        lastCamera.distanceToSqr(camera.pos) < STILL_DISTANCE_SQR &&
-            camera.viewRotationMatrix.equals(previousView, STILL_EPSILON) &&
-            previousProjection.equals(projection, STILL_EPSILON)
+    private fun isStill(camera: CameraRenderState, lastCamera: Vec3): Boolean =
+        lastCamera.distanceToSqr(camera.pos) < STILL_DISTANCE_SQR && camera.viewRotationMatrix.equals(previousView, STILL_EPSILON)
 
     private fun frameRateScale(frameSeconds: Float): Float {
         if (frameSeconds <= 0f || frameSeconds >= 1f) return 1f
@@ -77,7 +73,7 @@ object MotionBlur : Module(
                 .putMat4f(Matrix4f(projection).invert())
                 .putMat4f(Matrix4f(camera.viewRotationMatrix).invert())
                 .putMat4f(previousView)
-                .putMat4f(previousProjection)
+                .putMat4f(projection)
                 .putVec3((camera.pos.x - lastCamera.x).toFloat(), (camera.pos.y - lastCamera.y).toFloat(), (camera.pos.z - lastCamera.z).toFloat())
                 .putFloat(strength)
                 .putVec2(target.width.toFloat(), target.height.toFloat())
