@@ -17,6 +17,7 @@ import org.solidhax.shiro.events.core.EventBus
 import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.misc.ArrayListModule
+import org.solidhax.shiro.features.impl.misc.AspectRatio
 import org.solidhax.shiro.features.impl.misc.TestModule
 import org.solidhax.shiro.utils.render.RenderBatchManager
 import org.solidhax.shiro.utils.skyblock.LocationUtils
@@ -41,6 +42,7 @@ object Shiro : ClientModInitializer {
             TestModule,
             CorpseESP,
             ArrayListModule,
+            AspectRatio,
         )
 
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath(MOD_ID, "hud"), ModuleManager::renderHud)

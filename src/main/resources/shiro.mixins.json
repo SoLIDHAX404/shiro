@@ -9,6 +9,7 @@
     "AbstractClientPlayerMixin",
     "FontMixin",
     "AvatarRendererMixin",
+    "CameraMixin",
     "ConnectionMixin",
     "EntityRendererMixin",
     "LevelExtractorMixin",
