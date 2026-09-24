@@ -10,9 +10,6 @@ object AnimationManager {
     var time = Util.getMillis()
         private set
 
-    /**
-     * Refreshes [time]. Safe to call more than once per frame, since both the HUD and an open screen call it.
-     */
     fun update() {
         time = Util.getMillis()
     }
