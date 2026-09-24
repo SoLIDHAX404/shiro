@@ -2,9 +2,12 @@ package org.solidhax.shiro.utils.render
 
 import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.model.EntityModel
+import net.minecraft.client.model.HeadedModel
 import net.minecraft.client.model.geom.ModelPart
+import net.minecraft.client.model.`object`.skull.SkullModelBase
 import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.LivingEntityRenderer
+import net.minecraft.client.renderer.entity.layers.CustomHeadLayer
 import net.minecraft.client.renderer.entity.state.EntityRenderState
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState
 import net.minecraft.world.entity.Entity
@@ -12,7 +15,8 @@ import net.minecraft.world.entity.Pose
 import net.minecraft.world.phys.AABB
 import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
-import org.solidhax.shiro.mixin.LivingEntityRendererInvoker
+import org.solidhax.shiro.mixin.CustomHeadLayerAccessor
+import org.solidhax.shiro.mixin.LivingEntityRendererAccessor
 import org.solidhax.shiro.mixin.ModelPartAccessor
 
 /**
@@ -46,10 +50,10 @@ object ModelBounds {
             poseStack.translate(-bed.stepX * offset, 0f, -bed.stepZ * offset)
         }
         poseStack.scale(state.scale, state.scale, state.scale)
-        val invoker = renderer as LivingEntityRendererInvoker
-        invoker.shiroSetupRotations(state, poseStack, state.bodyRot, state.scale)
+        val accessor = renderer as LivingEntityRendererAccessor
+        accessor.shiroSetupRotations(state, poseStack, state.bodyRot, state.scale)
         poseStack.scale(-1f, -1f, 1f)
-        invoker.shiroScale(state, poseStack)
+        accessor.shiroScale(state, poseStack)
         poseStack.translate(0f, -1.501f, 0f)
 
         @Suppress("UNCHECKED_CAST")
@@ -58,10 +62,13 @@ object ModelBounds {
 
         val min = Vector3f(Float.POSITIVE_INFINITY)
         val max = Vector3f(Float.NEGATIVE_INFINITY)
-        visit(model.root(), poseStack) { point ->
+        val corner: (Vector3f) -> Unit = { point ->
             min.min(point)
             max.max(point)
         }
+        visit(model.root(), poseStack, corner)
+        val headLayer = accessor.shiroLayers().firstNotNullOfOrNull { it as? CustomHeadLayer<*, *> }
+        if (headLayer != null && model is HeadedModel) visitHead(headLayer, model, state, poseStack, corner)
         if (min.x > max.x) return null
         return AABB(min.x.toDouble(), min.y.toDouble(), min.z.toDouble(), max.x.toDouble(), max.y.toDouble(), max.z.toDouble())
     }
@@ -84,6 +91,31 @@ object ModelBounds {
             }
         }
         for (child in accessor.shiroChildren().values) visit(child, poseStack, corner)
+        poseStack.popPose()
+    }
+
+    private fun visitHead(layer: CustomHeadLayer<*, *>, model: EntityModel<*>, state: LivingEntityRenderState, poseStack: PoseStack, corner: (Vector3f) -> Unit) {
+        val wornHead = state.wornHeadType
+        if (state.headItem.isEmpty && wornHead == null) return
+        val accessor = layer as CustomHeadLayerAccessor
+        val transforms = accessor.shiroTransforms()
+
+        poseStack.pushPose()
+        poseStack.scale(transforms.horizontalScale, transforms.verticalScale, transforms.horizontalScale)
+        model.root().translateAndRotate(poseStack)
+        (model as HeadedModel).translateToHead(poseStack)
+
+        if (wornHead != null) {
+            poseStack.translate(0f, transforms.skullYOffset, 0f)
+            poseStack.scale(CustomHeadLayer.SKULL_SCALE, CustomHeadLayer.SKULL_SCALE, CustomHeadLayer.SKULL_SCALE)
+            val skull = accessor.shiroSkullModels().apply(wornHead)
+            skull.setupAnim(SkullModelBase.State().apply { animationPos = state.wornHeadAnimationPos })
+            visit(skull.root(), poseStack, corner)
+        } else {
+            CustomHeadLayer.translateToHead(poseStack, transforms)
+            val pose = poseStack.last().pose()
+            state.headItem.visitExtents { point -> corner(pose.transformPosition(point, Vector3f())) }
+        }
         poseStack.popPose()
     }
 

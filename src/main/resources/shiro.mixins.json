@@ -11,9 +11,10 @@
     "AvatarRendererMixin",
     "CameraMixin",
     "ConnectionMixin",
+    "CustomHeadLayerAccessor",
     "EntityRendererMixin",
     "LevelExtractorMixin",
-    "LivingEntityRendererInvoker",
+    "LivingEntityRendererAccessor",
     "ModelPartAccessor"
   ],
   "injectors": {
