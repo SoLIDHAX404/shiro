@@ -2,14 +2,13 @@ package org.solidhax.shiro.gui.settings
 
 import org.solidhax.shiro.features.Module
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
-import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 abstract class Setting<T>(
     val name: String,
     var description: String = "",
-) : ReadWriteProperty<Module, T>, PropertyDelegateProvider<Module, ReadWriteProperty<Module, T>> {
+) : ReadWriteProperty<Module, T> {
 
     abstract val default: T
 
@@ -33,9 +32,6 @@ abstract class Setting<T>(
 
     val isVisible: Boolean
         get() = (visibilityDependency?.invoke() ?: true) && !hidden
-
-    override operator fun provideDelegate(thisRef: Module, property: KProperty<*>): ReadWriteProperty<Module, T> =
-        thisRef.registerSetting(this)
 
     override operator fun getValue(thisRef: Module, property: KProperty<*>): T =
         value

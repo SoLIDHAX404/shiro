@@ -3,7 +3,11 @@ package org.solidhax.shiro.features
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import org.solidhax.shiro.Shiro
 import org.solidhax.shiro.gui.settings.Setting
+import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.HudSetting
+import kotlin.properties.ReadOnlyProperty
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 abstract class Module(
     val name: String,
@@ -34,11 +38,19 @@ abstract class Module(
     }
 
     fun <K : Setting<*>> registerSetting(setting: K): K {
-        settings[setting.name] = setting
+        settings[setting.parent?.let { "${it.name}.${setting.name}" } ?: setting.name] = setting
         return setting
     }
 
     operator fun <K : Setting<*>> K.unaryPlus(): K = registerSetting(this)
+
+    operator fun <T> Setting<T>.provideDelegate(thisRef: Module, property: KProperty<*>): ReadWriteProperty<Module, T> =
+        registerSetting(this)
+
+    operator fun DropdownSetting.provideDelegate(thisRef: Module, property: KProperty<*>): ReadOnlyProperty<Module, DropdownSetting> {
+        registerSetting(this)
+        return ReadOnlyProperty { _, _ -> this }
+    }
 
     /**
      * Creates a HUD element that can be moved and scaled in the HUD editor (/shiro hud).

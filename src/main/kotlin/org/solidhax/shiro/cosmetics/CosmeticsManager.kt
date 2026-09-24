@@ -24,9 +24,9 @@ object CosmeticsManager {
     private val endColor = ColorSetting("End Color", WHITE, desc = "Color the name fades to.").withDependency(displayNameDropdown)
 
     private val sizeDropdown = DropdownSetting("Player Size")
-    private val width = sizeSetting("Width", "X")
-    private val height = sizeSetting("Height", "Y")
-    private val depth = sizeSetting("Depth", "Z")
+    private val width = sizeSetting("Width", "X").withDependency(sizeDropdown)
+    private val height = sizeSetting("Height", "Y").withDependency(sizeDropdown)
+    private val depth = sizeSetting("Depth", "Z").withDependency(sizeDropdown)
 
     private val cape = CapeSetting("Cape")
 
