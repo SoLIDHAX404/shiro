@@ -30,7 +30,6 @@ import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
-import org.solidhax.shiro.utils.ui.animation.AnimationManager
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import java.util.EnumMap
 import kotlin.math.PI
@@ -79,6 +78,7 @@ class EntityPreview(
     private var zoom = 1f
     private var dragging = false
     private var lastInteraction = 0L
+    private var lastFrame = 0L
 
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float) {
         this.x = x
@@ -87,7 +87,10 @@ class EntityPreview(
         this.height = height
         initialized
 
-        if (autoSpin && !dragging && Util.getMillis() - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * AnimationManager.deltaSeconds
+        val now = Util.getMillis()
+        val deltaSeconds = ((now - lastFrame) / 1000f).coerceIn(0f, MAX_DELTA)
+        lastFrame = now
+        if (autoSpin && !dragging && now - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * deltaSeconds
 
         val entity = entity() ?: return
         val state = mc.entityRenderDispatcher.getRenderer(entity).createRenderState(entity, 1f)
@@ -208,6 +211,7 @@ class EntityPreview(
         private const val SITTING_PIVOT = 0.66f
         private const val ROTATE_SPEED = 1.2f
         private const val SPIN_SPEED = 20f
+        private const val MAX_DELTA = 0.1f
         private const val IDLE_DELAY_MS = 2000L
         private const val MAX_PITCH = 80f
         private const val ZOOM_STEP = 1.1f

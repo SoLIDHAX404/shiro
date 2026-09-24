@@ -7,18 +7,14 @@ const val HOVER_DURATION = 120L
 
 object AnimationManager {
 
-    private const val MAX_DELTA = 0.1f
-
     var time = Util.getMillis()
         private set
 
-    var deltaSeconds = 0f
-        private set
-
+    /**
+     * Refreshes [time]. Safe to call more than once per frame, since both the HUD and an open screen call it.
+     */
     fun update() {
-        val now = Util.getMillis()
-        deltaSeconds = ((now - time) / 1000f).coerceIn(0f, MAX_DELTA)
-        time = now
+        time = Util.getMillis()
     }
 }
 
