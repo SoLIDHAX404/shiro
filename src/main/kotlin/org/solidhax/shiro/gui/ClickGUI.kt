@@ -7,6 +7,7 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import org.solidhax.shiro.Shiro.mc
+import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.utils.ui.animation.Animation
 import org.solidhax.shiro.utils.ui.animation.AnimationManager
 import kotlin.math.floor
@@ -82,6 +83,7 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
 
     override fun removed() {
         panel.unfocus()
+        ModuleManager.saveConfigurations()
         super.removed()
     }
 
