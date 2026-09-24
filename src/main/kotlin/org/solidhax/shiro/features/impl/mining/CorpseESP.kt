@@ -31,40 +31,9 @@ object CorpseESP : Module(
     name = "Corpse ESP",
     description = "Highlights corpses in Glacite Mineshafts."
 ) {
-    private const val ARMOR_COLOR = 0x1A2A6C
+    private val corpseSettings = CorpseType.entries.associateWith(::corpseSettings)
 
-    enum class CorpseType(val displayName: String, val helmetName: String, val defaultColor: Int) {
-        LAPIS("Lapis", "Lapis Armor Helmet", 0xFF5555FF.toInt()),
-        UMBER("Umber", "Yog Helmet", 0xFFFFAA00.toInt()),
-        TUNGSTEN("Tungsten", "Mineral Helmet", 0xFFAAAAAA.toInt()),
-        VANGUARD("Vanguard", "Vanguard Helmet", 0xFF55FFFF.toInt());
-
-        companion object {
-            fun fromHelmet(name: String?): CorpseType? = entries.find { it.helmetName == name }
-        }
-    }
-
-    private class CorpseSettings(
-        val highlight: BooleanSetting,
-        val showDistance: BooleanSetting,
-        val announceToParty: BooleanSetting,
-        val color: ColorSetting,
-    )
-
-    private val corpseSettings = CorpseType.entries.associateWith { type ->
-        val name = type.displayName.lowercase()
-        val dropdown = +DropdownSetting("${type.displayName} Corpse")
-        CorpseSettings(
-            highlight = +BooleanSetting("Highlight", false, desc = "Highlights $name corpses.").withDependency(dropdown),
-            showDistance = +BooleanSetting("Show Distance", false, desc = "Shows how far away each $name corpse is.").withDependency(dropdown),
-            announceToParty = +BooleanSetting("Announce to Party", false, desc = "Sends found $name corpses to party chat.").withDependency(dropdown),
-            color = +ColorSetting("Highlight Color", type.defaultColor, desc = "Color used to highlight $name corpses.").withDependency(dropdown),
-        )
-    }
-
-    private val CorpseType.settings: CorpseSettings get() = corpseSettings.getValue(this)
-
-    private val corpseBreakdown by HUD("Corpse Breakdown HUD", "An example HUD element.") { 10f to 10f}
+    private val corpseBreakdown by HUD("Corpse Breakdown HUD", "An example HUD element.") { 10f to 10f }
 
     private val preview = +PreviewSetting("Preview", EntityPreview(DummyEntity { RemotePlayer(it, GameProfile(UUID(0L, 0L), "Steve")) }) {
         skin = DefaultPlayerSkin.getDefaultSkin()
@@ -100,5 +69,38 @@ object CorpseESP : Module(
         }
     }
 
+    private val CorpseType.settings: CorpseSettings get() = corpseSettings.getValue(this)
+
+    private fun corpseSettings(type: CorpseType): CorpseSettings {
+        val name = type.displayName.lowercase()
+        val dropdown = +DropdownSetting("${type.displayName} Corpse")
+        return CorpseSettings(
+            highlight = +BooleanSetting("Highlight", false, desc = "Highlights $name corpses.").withDependency(dropdown),
+            showDistance = +BooleanSetting("Show Distance", false, desc = "Shows how far away each $name corpse is.").withDependency(dropdown),
+            announceToParty = +BooleanSetting("Announce to Party", false, desc = "Sends found $name corpses to party chat.").withDependency(dropdown),
+            color = +ColorSetting("Highlight Color", type.defaultColor, desc = "Color used to highlight $name corpses.").withDependency(dropdown),
+        )
+    }
+
     private fun leather(item: Item): ItemStack = ItemStack(item).apply { set(DataComponents.DYED_COLOR, DyedItemColor(ARMOR_COLOR)) }
+
+    enum class CorpseType(val displayName: String, val helmetName: String, val defaultColor: Int) {
+        LAPIS("Lapis", "Lapis Armor Helmet", 0xFF5555FF.toInt()),
+        UMBER("Umber", "Yog Helmet", 0xFFFFAA00.toInt()),
+        TUNGSTEN("Tungsten", "Mineral Helmet", 0xFFAAAAAA.toInt()),
+        VANGUARD("Vanguard", "Vanguard Helmet", 0xFF55FFFF.toInt());
+
+        companion object {
+            fun fromHelmet(name: String?): CorpseType? = entries.find { it.helmetName == name }
+        }
+    }
+
+    private class CorpseSettings(
+        val highlight: BooleanSetting,
+        val showDistance: BooleanSetting,
+        val announceToParty: BooleanSetting,
+        val color: ColorSetting,
+    )
+
+    private const val ARMOR_COLOR = 0x1A2A6C
 }
