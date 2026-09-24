@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.AbstractLevelRenderCont
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.network.protocol.Packet
+import net.minecraft.world.entity.Entity
 import org.solidhax.shiro.events.core.CancellableEvent
 import org.solidhax.shiro.events.core.Event
 import org.solidhax.shiro.utils.render.RenderConsumer
@@ -29,3 +30,12 @@ abstract class PacketEvent(val packet: Packet<*>) : CancellableEvent() {
 }
 
 object LocationChangeEvent : Event
+
+class EntityGlowEvent(val entity: Entity) : Event {
+    var color: Int? = null
+
+    companion object {
+        @JvmStatic
+        fun colorOf(entity: Entity): Int? = EntityGlowEvent(entity).apply { postAndCatch() }.color
+    }
+}

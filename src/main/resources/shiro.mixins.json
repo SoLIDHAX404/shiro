@@ -9,7 +9,9 @@
     "AbstractClientPlayerMixin",
     "FontMixin",
     "AvatarRendererMixin",
-    "ConnectionMixin"
+    "ConnectionMixin",
+    "EntityRendererMixin",
+    "LevelExtractorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

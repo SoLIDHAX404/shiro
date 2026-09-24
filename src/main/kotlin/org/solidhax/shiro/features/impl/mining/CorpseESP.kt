@@ -10,8 +10,8 @@ import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.DyedItemColor
+import org.solidhax.shiro.events.EntityGlowEvent
 import org.solidhax.shiro.events.LevelEvent
-import org.solidhax.shiro.events.RenderEvent
 import org.solidhax.shiro.events.TickEvent
 import org.solidhax.shiro.events.core.on
 import org.solidhax.shiro.features.Module
@@ -22,7 +22,6 @@ import org.solidhax.shiro.gui.settings.impl.BooleanSetting
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
-import org.solidhax.shiro.utils.render.drawWireFrameBox
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import java.util.UUID
@@ -57,11 +56,9 @@ object CorpseESP : Module(
             }
         }
 
-        on<RenderEvent.Extract> {
-            for ((entity, type) in corpses) {
-                val settings = type.settings
-                if (settings.highlight.value) drawWireFrameBox(entity.boundingBox, settings.color.value)
-            }
+        on<EntityGlowEvent> {
+            val settings = corpses[entity]?.settings ?: return@on
+            if (settings.highlight.value) color = settings.color.value
         }
 
         on<LevelEvent.Load> {
