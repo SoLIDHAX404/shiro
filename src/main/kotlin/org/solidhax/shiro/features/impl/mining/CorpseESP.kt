@@ -42,8 +42,6 @@ object CorpseESP : Module(
 ) {
     private val corpseSettings = CorpseType.entries.associateWith(::corpseSettings)
 
-    private val corpseBreakdown by HUD("Corpse Breakdown HUD", "An example HUD element.") { 10f to 10f }
-
     private val nameTagPosition = +LabelPositionSetting("Name Tag Position", desc = "Which side of each corpse the name tag sits on. Drag it in the preview to move it.")
 
     private val previewLabel = PreviewLabel(nameTagPosition) { nameTagSegments(CorpseType.LAPIS, PREVIEW_DISTANCE) }
@@ -98,7 +96,6 @@ object CorpseESP : Module(
             highlight = +BooleanSetting("Highlight", false, desc = "Highlights $name corpses.").withDependency(dropdown),
             showType = +BooleanSetting("Show Type", false, desc = "Shows the type above each $name corpse.").withDependency(dropdown),
             showDistance = +BooleanSetting("Show Distance", false, desc = "Shows how far away each $name corpse is.").withDependency(dropdown),
-            announceToParty = +BooleanSetting("Announce to Party", false, desc = "Sends found $name corpses to party chat.").withDependency(dropdown),
             color = +ColorSetting("Highlight Color", type.defaultColor, desc = "Color used to highlight $name corpses.").withDependency(dropdown),
         )
     }
@@ -114,10 +111,10 @@ object CorpseESP : Module(
     private fun leather(item: Item): ItemStack = ItemStack(item).apply { set(DataComponents.DYED_COLOR, DyedItemColor(ARMOR_COLOR)) }
 
     enum class CorpseType(val displayName: String, val helmetName: String, val defaultColor: Int) {
-        LAPIS("Lapis", "Lapis Armor Helmet", 0xFF5555FF.toInt()),
-        UMBER("Umber", "Yog Helmet", 0xFFFFAA00.toInt()),
-        TUNGSTEN("Tungsten", "Mineral Helmet", 0xFFAAAAAA.toInt()),
-        VANGUARD("Vanguard", "Vanguard Helmet", 0xFF55FFFF.toInt());
+        LAPIS("Lapis", "Lapis Armor Helmet", 0xFF0000FF.toInt()),
+        UMBER("Umber", "Yog Helmet", 0xFFB56222.toInt()),
+        TUNGSTEN("Tungsten", "Mineral Helmet", 0xFFFFFFFF.toInt()),
+        VANGUARD("Vanguard", "Vanguard Helmet", 0xFFF224B8.toInt());
 
         companion object {
             fun fromHelmet(name: String?): CorpseType? = entries.find { it.helmetName == name }
@@ -128,7 +125,6 @@ object CorpseESP : Module(
         val highlight: BooleanSetting,
         val showType: BooleanSetting,
         val showDistance: BooleanSetting,
-        val announceToParty: BooleanSetting,
         val color: ColorSetting,
     )
 
