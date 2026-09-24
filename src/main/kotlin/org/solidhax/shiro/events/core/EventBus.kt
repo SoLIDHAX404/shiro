@@ -1,7 +1,9 @@
 // Adapted from Odin (https://github.com/odtheking/Odin), Copyright (c) 2025, odtheking, BSD 3-Clause License.
 package org.solidhax.shiro.events.core
 
+import net.minecraft.network.protocol.Packet
 import net.minecraft.util.profiling.Profiler
+import org.solidhax.shiro.events.PacketEvent
 import net.minecraft.util.profiling.ProfilerFiller
 
 object EventBus {
@@ -141,4 +143,20 @@ inline fun <reified T : Event> Any.on(
     noinline handler: T.() -> Unit
 ) = EventBus.registerListener(this.javaClass, T::class.java, priority, ignoreCancelled) {
     it.handler()
+}
+
+inline fun <reified P : Packet<*>> Any.onReceive(
+    priority: Int = 0,
+    ignoreCancelled: Boolean = false,
+    noinline handler: P.(PacketEvent.Receive) -> Unit
+) = EventBus.registerListener(this.javaClass, PacketEvent.Receive::class.java, priority, ignoreCancelled) {
+    (it.packet as? P)?.handler(it)
+}
+
+inline fun <reified P : Packet<*>> Any.onSend(
+    priority: Int = 0,
+    ignoreCancelled: Boolean = false,
+    noinline handler: P.(PacketEvent.Send) -> Unit
+) = EventBus.registerListener(this.javaClass, PacketEvent.Send::class.java, priority, ignoreCancelled) {
+    (it.packet as? P)?.handler(it)
 }

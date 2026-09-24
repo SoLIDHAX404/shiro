@@ -26,5 +26,8 @@ fun displayName(maxWidth: Float, size: Float): String {
     return cachedDisplayName
 }
 
+fun Any?.equalsOneOf(vararg options: Any?): Boolean =
+    options.any { this == it }
+
 fun logError(throwable: Throwable, context: Any) =
     logger.error("Caught an ${throwable::class.simpleName ?: "error"} at ${context::class.simpleName}.", throwable)

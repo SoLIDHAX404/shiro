@@ -3,6 +3,8 @@ package org.solidhax.shiro.events
 import net.fabricmc.fabric.api.client.rendering.v1.level.AbstractLevelRenderContext
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.network.protocol.Packet
+import org.solidhax.shiro.events.core.CancellableEvent
 import org.solidhax.shiro.events.core.Event
 
 interface TickEvent : Event {
@@ -19,3 +21,10 @@ abstract class RenderEvent(open val context: AbstractLevelRenderContext) : Event
     class Extract(override val context: LevelRenderContext) : RenderEvent(context)
     class Last(override val context: LevelRenderContext) : RenderEvent(context)
 }
+
+abstract class PacketEvent(val packet: Packet<*>) : CancellableEvent() {
+    class Receive(packet: Packet<*>) : PacketEvent(packet)
+    class Send(packet: Packet<*>) : PacketEvent(packet)
+}
+
+object LocationChangeEvent : Event

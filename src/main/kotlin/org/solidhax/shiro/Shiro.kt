@@ -18,6 +18,7 @@ import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.misc.ArrayListModule
 import org.solidhax.shiro.features.impl.misc.TestModule
+import org.solidhax.shiro.utils.skyblock.LocationUtils
 import java.io.File
 
 object Shiro : ClientModInitializer {
@@ -32,7 +33,7 @@ object Shiro : ClientModInitializer {
     val configDir: File = FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile()
 
     override fun onInitializeClient() {
-        EventBus.subscribe(EventDispatcher)
+        listOf(EventDispatcher, LocationUtils).forEach { EventBus.subscribe(it) }
 
         ModuleManager.registerModules(
             ModuleConfig("shiro-config.json"),
