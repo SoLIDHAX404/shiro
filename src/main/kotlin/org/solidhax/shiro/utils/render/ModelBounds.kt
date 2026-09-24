@@ -32,7 +32,7 @@ object ModelBounds {
     fun of(entity: Entity, partialTick: Float): AABB {
         val renderer = mc.entityRenderDispatcher.getRenderer(entity)
         val state = renderer.createRenderState(entity, partialTick)
-        return of(renderer, state)?.move(state.x, state.y, state.z) ?: entity.boundingBox
+        return of(renderer, state)?.move(state.x, state.y, state.z) ?: entity.boundingBox.inflate(0.0, VERTICAL_PADDING, 0.0)
     }
 
     /**
@@ -70,7 +70,7 @@ object ModelBounds {
         val headLayer = accessor.shiroLayers().firstNotNullOfOrNull { it as? CustomHeadLayer<*, *> }
         if (headLayer != null && model is HeadedModel) visitHead(headLayer, model, state, poseStack, corner)
         if (min.x > max.x) return null
-        return AABB(min.x.toDouble(), min.y.toDouble(), min.z.toDouble(), max.x.toDouble(), max.y.toDouble(), max.z.toDouble())
+        return AABB(min.x.toDouble(), min.y.toDouble(), min.z.toDouble(), max.x.toDouble(), max.y.toDouble(), max.z.toDouble()).inflate(0.0, VERTICAL_PADDING, 0.0)
     }
 
     // walks the parts the way ModelPart.render does, skipping hidden parts, and reports every cube corner
@@ -118,6 +118,8 @@ object ModelBounds {
         }
         poseStack.popPose()
     }
+
+    const val VERTICAL_PADDING = 0.1
 
     private const val PIXELS_PER_BLOCK = 16f
 }

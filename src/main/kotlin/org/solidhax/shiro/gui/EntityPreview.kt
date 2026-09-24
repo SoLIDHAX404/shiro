@@ -152,7 +152,7 @@ class EntityPreview(
 
     private fun hitbox(state: EntityRenderState): AABB {
         val halfWidth = state.boundingBoxWidth / 2.0
-        return AABB(-halfWidth, 0.0, -halfWidth, halfWidth, state.boundingBoxHeight.toDouble(), halfWidth)
+        return AABB(-halfWidth, 0.0, -halfWidth, halfWidth, state.boundingBoxHeight.toDouble(), halfWidth).inflate(0.0, ModelBounds.VERTICAL_PADDING, 0.0)
     }
 
     // the preview is orthographic and centered on the box, so each corner lands at the preview center plus its rotated offset
