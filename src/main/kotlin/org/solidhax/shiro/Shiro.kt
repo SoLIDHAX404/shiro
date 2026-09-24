@@ -14,6 +14,7 @@ import org.solidhax.shiro.commands.mainCommand
 import org.solidhax.shiro.config.ModuleConfig
 import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.features.impl.mining.CorpseESP
+import org.solidhax.shiro.features.impl.misc.ArrayListModule
 import org.solidhax.shiro.features.impl.misc.TestModule
 import java.io.File
 
@@ -33,6 +34,7 @@ object Shiro : ClientModInitializer {
             ModuleConfig("shiro-config.json"),
             TestModule,
             CorpseESP,
+            ArrayListModule,
         )
 
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath(MOD_ID, "hud"), ModuleManager::renderHud)
