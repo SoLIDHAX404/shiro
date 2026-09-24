@@ -17,7 +17,8 @@
           { "name": "PreviousProjection", "type": "matrix4x4", "value": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] },
           { "name": "CameraOffset", "type": "vec3", "value": [0, 0, 0] },
           { "name": "Strength", "type": "float", "value": 1 },
-          { "name": "Samples", "type": "int", "value": 16 }
+          { "name": "ScreenSize", "type": "vec2", "value": [1, 1] },
+          { "name": "MaxSamples", "type": "int", "value": 64 }
         ]
       }
     },

@@ -21,40 +21,55 @@ import org.solidhax.shiro.mixin.PostPassAccessor
 
 object MotionBlur : Module(
     name = "Motion Blur",
-    description = "Blurs the world along the way it moves across the screen when you turn or move."
+    description = "Blurs the world as you turn the camera."
 ) {
-    private val strength by NumberSetting("Strength", 1.0, 0.1, 3.0, 0.1, desc = "How far the blur reaches compared to how far things moved since the last frame.")
-    private val samples by NumberSetting("Samples", 16, 4, 64, 1, desc = "Samples taken along the motion. More looks smoother but costs more.")
+    private val strength by NumberSetting("Strength", 1.0, 0.1, 3.0, 0.1, desc = "How far the blur reaches compared to how far the view turns in one refresh of your monitor.")
+    private val maxSamples by NumberSetting("Max Samples", 64, 8, 128, 1, desc = "The most samples taken along fast motion. More looks smoother but costs more.")
 
     private val previousView = Matrix4f()
     private val previousProjection = Matrix4f()
     private var previousCamera: Vec3? = null
+    private var lastFrameNanos = 0L
 
     private var uniforms: GpuBuffer? = null
     private var uniformsOwner: PostChain? = null
     private var loadFailed = false
 
-    /**
-     * Called once the world has been drawn this frame, before the hand and HUD.
-     */
     @JvmStatic
     fun afterLevel(allocator: GraphicsResourceAllocator, camera: CameraRenderState, projection: Matrix4fc) {
+        val now = System.nanoTime()
+        val frameSeconds = (now - lastFrameNanos) / 1_000_000_000f
+        lastFrameNanos = now
         if (!enabled) {
             previousCamera = null
             return
         }
         val lastCamera = previousCamera
-        // skip frames right after enabling or a teleport, where there is no meaningful previous camera to blur from
-        if (lastCamera != null && lastCamera.distanceToSqr(camera.pos) < MAX_CAMERA_JUMP_SQR) apply(allocator, camera, projection, lastCamera)
+        if (lastCamera != null && lastCamera.distanceToSqr(camera.pos) < MAX_CAMERA_JUMP_SQR && !isStill(camera, projection, lastCamera)) {
+            apply(allocator, camera, projection, lastCamera, strength.toFloat() * frameRateScale(frameSeconds))
+        }
 
         previousView.set(camera.viewRotationMatrix)
         previousProjection.set(projection)
         previousCamera = camera.pos
     }
 
-    private fun apply(allocator: GraphicsResourceAllocator, camera: CameraRenderState, projection: Matrix4fc, lastCamera: Vec3) {
+    private fun isStill(camera: CameraRenderState, projection: Matrix4fc, lastCamera: Vec3): Boolean =
+        lastCamera.distanceToSqr(camera.pos) < STILL_DISTANCE_SQR &&
+            camera.viewRotationMatrix.equals(previousView, STILL_EPSILON) &&
+            previousProjection.equals(projection, STILL_EPSILON)
+
+    private fun frameRateScale(frameSeconds: Float): Float {
+        if (frameSeconds <= 0f || frameSeconds >= 1f) return 1f
+        val refreshRate = mc.window.findBestMonitor()?.currentMode()?.refreshRate?.toFloat() ?: return 1f
+        if (refreshRate <= 0f) return 1f
+        return (1f / frameSeconds / refreshRate).coerceAtLeast(1f)
+    }
+
+    private fun apply(allocator: GraphicsResourceAllocator, camera: CameraRenderState, projection: Matrix4fc, lastCamera: Vec3, strength: Float) {
         val chain = postChain() ?: return
         val buffer = uniformBuffer(chain) ?: return
+        val target = mc.gameRenderer.mainRenderTarget()
 
         val data = MemoryUtil.memCalloc(UNIFORM_SIZE)
         try {
@@ -64,8 +79,9 @@ object MotionBlur : Module(
                 .putMat4f(previousView)
                 .putMat4f(previousProjection)
                 .putVec3((camera.pos.x - lastCamera.x).toFloat(), (camera.pos.y - lastCamera.y).toFloat(), (camera.pos.z - lastCamera.z).toFloat())
-                .putFloat(strength.toFloat())
-                .putInt(samples)
+                .putFloat(strength)
+                .putVec2(target.width.toFloat(), target.height.toFloat())
+                .putInt(maxSamples)
             data.position(0)
             data.limit(UNIFORM_SIZE)
             RenderSystem.getDevice().createCommandEncoder().writeToBuffer(buffer.slice(0L, UNIFORM_SIZE.toLong()), data)
@@ -73,7 +89,7 @@ object MotionBlur : Module(
             MemoryUtil.memFree(data)
         }
 
-        chain.process(mc.gameRenderer.mainRenderTarget(), allocator)
+        chain.process(target, allocator)
     }
 
     private fun postChain(): PostChain? {
@@ -87,8 +103,6 @@ object MotionBlur : Module(
         }
     }
 
-    // the pass's own uniform buffer can't be written to, so it is swapped for one that can; a reload builds a new chain
-    // that gets its own buffer, and the old chain closes the old one along with itself
     private fun uniformBuffer(chain: PostChain): GpuBuffer? {
         val pass = (chain as PostChainAccessor).shiroPasses().firstOrNull() ?: return null
         val passUniforms = (pass as PostPassAccessor).shiroCustomUniforms()
@@ -106,7 +120,8 @@ object MotionBlur : Module(
     private val POST_EFFECT: Identifier = Identifier.fromNamespaceAndPath(MOD_ID, "motion_blur")
     private const val UNIFORM_BLOCK = "MotionBlurConfig"
 
-    // four mat4s, then a vec3 with the float packed into its last slot, then the int, rounded up to 16 bytes
     private const val UNIFORM_SIZE = 288
     private const val MAX_CAMERA_JUMP_SQR = 16.0 * 16.0
+    private const val STILL_DISTANCE_SQR = 1.0e-10
+    private const val STILL_EPSILON = 1.0e-6f
 }

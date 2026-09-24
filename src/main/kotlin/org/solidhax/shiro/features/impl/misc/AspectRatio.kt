@@ -12,9 +12,6 @@ object AspectRatio : Module(
     private val mode by SelectorSetting("Mode", "16:9", listOf("16:9", "4:3", "Custom"), desc = "The aspect ratio the world is rendered at.")
     private val customRatio by NumberSetting("Aspect Ratio", 1.33, 0.5, 3.0, 0.01, desc = "Width divided by height, e.g. 1.33 for 4:3.").withDependency { mode == MODE_CUSTOM }
 
-    /**
-     * The aspect ratio the world should be rendered at, or null to keep the window's own.
-     */
     @JvmStatic
     fun currentRatio(): Float? {
         if (!enabled) return null
