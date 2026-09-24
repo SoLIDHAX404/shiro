@@ -1,7 +1,9 @@
 package org.solidhax.shiro.features
 
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import org.solidhax.shiro.Shiro
 import org.solidhax.shiro.gui.settings.Setting
+import org.solidhax.shiro.gui.settings.impl.HudSetting
 
 abstract class Module(
     val name: String,
@@ -37,6 +39,20 @@ abstract class Module(
     }
 
     operator fun <K : Setting<*>> K.unaryPlus(): K = registerSetting(this)
+
+    /**
+     * Creates a HUD element that can be moved and scaled in the HUD editor (/shiro hud).
+     * [block] draws the content at (0, 0) and returns its unscaled (width, height).
+     */
+    fun HUD(
+        name: String,
+        desc: String,
+        toggleable: Boolean = true,
+        x: Float = 10f,
+        y: Float = 10f,
+        scale: Float = 1f,
+        block: GuiGraphicsExtractor.(example: Boolean) -> Pair<Float, Float>,
+    ): HudSetting = HudSetting(name, x, y, scale, toggleable, desc, this, block)
 
     private companion object {
         private fun getCategoryFromPackage(clazz: Class<out Module>): Category {

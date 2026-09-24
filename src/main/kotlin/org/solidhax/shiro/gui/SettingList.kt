@@ -10,6 +10,7 @@ import foo.starred.cascade.graphics.geometry.CascadeGeometricRadius
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
+import net.minecraft.resources.Identifier
 import org.solidhax.shiro.cosmetics.CapeSetting
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.Page.Companion.PADDING
@@ -19,6 +20,7 @@ import org.solidhax.shiro.gui.settings.impl.ActionSetting
 import org.solidhax.shiro.gui.settings.impl.BooleanSetting
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
+import org.solidhax.shiro.gui.settings.impl.HudSetting
 import org.solidhax.shiro.gui.settings.impl.KeybindSetting
 import org.solidhax.shiro.gui.settings.impl.NumberSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
@@ -186,6 +188,13 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
             }
 
             is CapeSetting -> capeSelector(setting).draw(graphics, left, controlY(y), inner, mouseX, mouseY)
+
+            is HudSetting -> {
+                graphics.icon(MOVE, right - ICON_SIZE, textY + (TEXT_SIZE - ICON_SIZE) / 2f, ICON_SIZE, lerpColor(theme.textMuted, theme.text, hover))
+                if (setting.toggleable) {
+                    Checkbox.draw(graphics, hudCheckboxX, textY + (TEXT_SIZE - Checkbox.SIZE) / 2f, hovered, stateAnimations[setting].animate(setting.value.enabled))
+                }
+            }
         }
     }
 
@@ -202,6 +211,15 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
             is KeybindSetting -> listening = setting
             is StringSetting -> return textField(setting).mouseClicked(mouseX, mouseY)
             is CapeSetting -> return capeSelector(setting).mouseClicked(mouseX, mouseY)
+
+            is HudSetting -> {
+                val checkboxY = y + (CARD_HEIGHT - Checkbox.SIZE) / 2f
+                if (setting.toggleable && isAreaHovered(mouseX, mouseY, hudCheckboxX, checkboxY, Checkbox.SIZE, Checkbox.SIZE)) {
+                    setting.value.enabled = !setting.value.enabled
+                } else {
+                    HudEditor.open(ClickGUI)
+                }
+            }
 
             is NumberSetting<*> -> {
                 if (!isSliderHovered(y, mouseX, mouseY)) return false
@@ -299,10 +317,13 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
 
     private val fieldWidth get() = inner * FIELD_WIDTH_RATIO
 
+    private val hudCheckboxX get() = right - ICON_SIZE - HUD_CHECKBOX_GAP - Checkbox.SIZE
+
     companion object {
         private const val INNER_PADDING = 8f
         private const val CONTROL_GAP = 6f
         private const val ICON_SIZE = 8f
+        private const val HUD_CHECKBOX_GAP = 8f
         private const val SLIDER_GRAB = 4f
         private const val FIELD_WIDTH_RATIO = 0.62f
         private const val KEY_HEIGHT = 13f
@@ -334,6 +355,8 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         private const val BLACK = 0xFF000000.toInt()
         private const val CLEAR = 0x00000000
 
+        private val MOVE: Identifier = Identifier.fromNamespaceAndPath("shiro", "move.svg")
+
         private val HUE_STOPS = intArrayOf(0xFFFF0000.toInt(), 0xFFFFFF00.toInt(), 0xFF00FF00.toInt(), 0xFF00FFFF.toInt(), 0xFF0000FF.toInt(), 0xFFFF00FF.toInt())
 
         private fun controlY(cardY: Float): Float = cardY + INNER_PADDING + TEXT_SIZE + CONTROL_GAP
@@ -359,6 +382,6 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         }
 
         private fun isClickable(setting: Setting<*>): Boolean =
-            setting is BooleanSetting || setting is SelectorSetting || setting is DropdownSetting || setting is ActionSetting || setting is KeybindSetting
+            setting is BooleanSetting || setting is SelectorSetting || setting is DropdownSetting || setting is ActionSetting || setting is KeybindSetting || setting is HudSetting
     }
 }
