@@ -1,6 +1,8 @@
 // Adapted from Odin (https://github.com/odtheking/Odin), Copyright (c) 2025, odtheking, BSD 3-Clause License.
 package org.solidhax.shiro.utils.render
 
+import com.mojang.renderpearl.api.pipeline.BlendFunction
+import com.mojang.renderpearl.api.pipeline.ColorTargetState
 import com.mojang.renderpearl.api.pipeline.RenderPipeline
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
@@ -10,6 +12,7 @@ import java.util.Optional
 object CustomRenderPipelines {
     val LINES_ESP: RenderPipeline = RenderPipelines.register(
         RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
+            .withColorTargetState(ColorTargetState.DEFAULT)
             .withDepthStencilState(Optional.empty())
             .withLocation(Identifier.fromNamespaceAndPath(MOD_ID, "pipeline/lines_esp"))
             .build()
@@ -17,6 +20,7 @@ object CustomRenderPipelines {
 
     val LINES_TRANSLUCENT_ESP: RenderPipeline = RenderPipelines.register(
         RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
+            .withColorTargetState(ColorTargetState(BlendFunction.TRANSLUCENT))
             .withDepthStencilState(Optional.empty())
             .withLocation(Identifier.fromNamespaceAndPath(MOD_ID, "pipeline/lines_translucent_esp"))
             .build()
