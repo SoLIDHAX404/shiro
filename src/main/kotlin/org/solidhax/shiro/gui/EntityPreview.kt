@@ -32,15 +32,15 @@ import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
-import org.solidhax.shiro.gui.settings.impl.AnchorSetting
+import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.utils.ui.Bounds
-import org.solidhax.shiro.utils.ui.BoxAnchor
+import org.solidhax.shiro.utils.ui.LabelPosition
 import org.solidhax.shiro.utils.ui.NameTagSegments
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.nameTag
-import org.solidhax.shiro.utils.ui.nameTagAnchor
 import org.solidhax.shiro.utils.ui.nameTagBounds
+import org.solidhax.shiro.utils.ui.nearestNameTagPosition
 import java.util.EnumMap
 import kotlin.math.PI
 import kotlin.math.max
@@ -165,21 +165,29 @@ class EntityPreview(
             labelBounds = null
             return
         }
-        val tag = nameTagBounds(bounds, label.anchor?.value ?: BoxAnchor.ABOVE, segments)
+        val position = label.position?.value ?: LabelPosition.TOP
+        val tag = nameTagBounds(bounds, position, segments)
         labelBounds = tag
 
         graphics.scissor(x, y, width, height) {
-            if (draggingLabel) graphics.hollowRectangle(bounds.left, bounds.top, bounds.width, bounds.height, 1f, ClickGUI.theme.divider, Radius.SMALL)
+            if (draggingLabel) {
+                graphics.hollowRectangle(bounds.left, bounds.top, bounds.width, bounds.height, 1f, ClickGUI.theme.divider, Radius.SMALL)
+                for (slot in LabelPosition.entries) {
+                    if (slot == position) continue
+                    val target = nameTagBounds(bounds, slot, segments)
+                    graphics.hollowRectangle(target.left, target.top, target.width, target.height, 1f, ClickGUI.theme.divider, Radius.MEDIUM)
+                }
+            }
             graphics.nameTag(tag, segments)
         }
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, doubleClick: Boolean): Boolean {
         if (!isHovered(mouseX, mouseY)) return false
-        val anchor = label?.anchor
+        val position = label?.position
         val tag = labelBounds
-        if (anchor != null && tag != null && tag.contains(mouseX, mouseY)) {
-            if (doubleClick) anchor.value = anchor.default
+        if (position != null && tag != null && tag.contains(mouseX, mouseY)) {
+            if (doubleClick) position.value = position.default
             draggingLabel = true
             labelMouse.set(mouseX, mouseY)
             labelGrab.set(tag.centerX - mouseX, tag.centerY - mouseY)
@@ -199,7 +207,7 @@ class EntityPreview(
         if (draggingLabel) {
             val label = label ?: return false
             labelMouse.add(deltaX, deltaY)
-            label.anchor?.value = nameTagAnchor(bounds, label.segments(), labelMouse.x + labelGrab.x, labelMouse.y + labelGrab.y)
+            label.position?.value = nearestNameTagPosition(bounds, label.segments(), labelMouse.x + labelGrab.x, labelMouse.y + labelGrab.y)
             return true
         }
         if (!dragging) return false
@@ -325,7 +333,7 @@ class DummyEntity<T : Entity>(private val create: (ClientLevel) -> T?) : () -> T
 }
 
 /**
- * A name tag drawn around the preview's bounding box. With an [anchor] it can be dragged around the box in the preview,
- * which stores its position there; without one it stays above the entity.
+ * A name tag drawn around the preview's bounding box. With a [position] setting it can be dragged to any side of the box
+ * in the preview, which stores the side there; without one it stays on top.
  */
-class PreviewLabel(val anchor: AnchorSetting? = null, val segments: () -> NameTagSegments)
+class PreviewLabel(val position: LabelPositionSetting? = null, val segments: () -> NameTagSegments)

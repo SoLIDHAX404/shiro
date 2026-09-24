@@ -34,23 +34,18 @@ data class Bounds(val left: Float, val top: Float, val right: Float, val bottom:
 }
 
 /**
- * Where a label sits around some [Bounds]. [x] and [y] go from 0 to 1: 0 puts the label fully before the left/top edge,
- * 1 fully past the right/bottom edge and 0.5 centers it on that axis, so the label never covers the bounds unless centered.
+ * Which side of some [Bounds] a label sits on, centered along that side and just outside it.
  */
-data class BoxAnchor(val x: Float, val y: Float) {
+enum class LabelPosition(private val x: Float, private val y: Float) {
+    TOP(0.5f, 0f),
+    BOTTOM(0.5f, 1f),
+    LEFT(0f, 0.5f),
+    RIGHT(1f, 0.5f);
 
+    // x and y go from 0 (label fully before the left/top edge) to 1 (fully past the right/bottom edge)
     fun place(bounds: Bounds, width: Float, height: Float): Bounds = Bounds.centered(
         bounds.left - width / 2f + x * (bounds.width + width),
         bounds.top - height / 2f + y * (bounds.height + height),
         width, height
     )
-
-    companion object {
-        val ABOVE = BoxAnchor(0.5f, 0f)
-
-        fun fromCenter(bounds: Bounds, width: Float, height: Float, centerX: Float, centerY: Float): BoxAnchor = BoxAnchor(
-            ((centerX - bounds.left + width / 2f) / (bounds.width + width)).coerceIn(0f, 1f),
-            ((centerY - bounds.top + height / 2f) / (bounds.height + height)).coerceIn(0f, 1f)
-        )
-    }
 }

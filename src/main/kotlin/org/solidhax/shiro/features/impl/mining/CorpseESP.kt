@@ -22,10 +22,10 @@ import org.solidhax.shiro.gui.DummyEntity
 import org.solidhax.shiro.gui.EntityPreview
 import org.solidhax.shiro.gui.PreviewLabel
 import org.solidhax.shiro.gui.settings.Setting.Companion.withDependency
-import org.solidhax.shiro.gui.settings.impl.AnchorSetting
 import org.solidhax.shiro.gui.settings.impl.BooleanSetting
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
+import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
@@ -43,9 +43,9 @@ object CorpseESP : Module(
 
     private val corpseBreakdown by HUD("Corpse Breakdown HUD", "An example HUD element.") { 10f to 10f }
 
-    private val nameTagAnchor = +AnchorSetting("Name Tag Position", desc = "Where the name tag sits around each corpse. Drag it in the preview to move it.")
+    private val nameTagPosition = +LabelPositionSetting("Name Tag Position", desc = "Which side of each corpse the name tag sits on. Drag it in the preview to move it.")
 
-    private val previewLabel = PreviewLabel(nameTagAnchor) { nameTagSegments(CorpseType.LAPIS, PREVIEW_DISTANCE) }
+    private val previewLabel = PreviewLabel(nameTagPosition) { nameTagSegments(CorpseType.LAPIS, PREVIEW_DISTANCE) }
 
     private val preview = +PreviewSetting("Preview", EntityPreview(DummyEntity { RemotePlayer(it, GameProfile(UUID(0L, 0L), "Steve")) }, label = previewLabel) {
         skin = DefaultPlayerSkin.getDefaultSkin()
@@ -79,7 +79,7 @@ object CorpseESP : Module(
             for ((entity, type) in corpses) {
                 val segments = nameTagSegments(type, player.distanceTo(entity).roundToInt())
                 if (segments.isEmpty()) continue
-                graphics.nameTag(screenBounds(entity.boundingBox) ?: continue, nameTagAnchor.value, segments)
+                graphics.nameTag(screenBounds(entity.boundingBox) ?: continue, nameTagPosition.value, segments)
             }
         }
 

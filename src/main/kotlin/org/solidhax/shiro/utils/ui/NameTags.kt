@@ -42,20 +42,21 @@ fun screenBounds(box: AABB): Bounds? {
 }
 
 /**
- * Where a name tag with [segments] goes when placed at [anchor] around [target].
+ * Where a name tag with [segments] goes when placed at [position] around [target].
  */
-fun nameTagBounds(target: Bounds, anchor: BoxAnchor, segments: NameTagSegments): Bounds {
+fun nameTagBounds(target: Bounds, position: LabelPosition, segments: NameTagSegments): Bounds {
     val width = segments.fold(0f) { total, (text, _) -> total + textWidth(text) } + NAMETAG_PADDING * 2f
-    return anchor.place(target.expand(NAMETAG_GAP), width, TEXT_SIZE + NAMETAG_PADDING)
+    return position.place(target.expand(NAMETAG_GAP), width, TEXT_SIZE + NAMETAG_PADDING)
 }
 
 /**
- * The anchor that puts a name tag with [segments] centered on ([centerX], [centerY]) around [target], as close as it can.
+ * The position whose name tag around [target] is centered closest to ([x], [y]).
  */
-fun nameTagAnchor(target: Bounds, segments: NameTagSegments, centerX: Float, centerY: Float): BoxAnchor {
-    val size = nameTagBounds(target, BoxAnchor.ABOVE, segments)
-    return BoxAnchor.fromCenter(target.expand(NAMETAG_GAP), size.width, size.height, centerX, centerY)
-}
+fun nearestNameTagPosition(target: Bounds, segments: NameTagSegments, x: Float, y: Float): LabelPosition =
+    LabelPosition.entries.minBy { position ->
+        val tag = nameTagBounds(target, position, segments)
+        (tag.centerX - x) * (tag.centerX - x) + (tag.centerY - y) * (tag.centerY - y)
+    }
 
 fun GuiGraphicsExtractor.nameTag(tag: Bounds, segments: NameTagSegments) {
     roundedRectangle(tag.left, tag.top, tag.width, tag.height, theme.card, Radius.MEDIUM)
@@ -66,6 +67,6 @@ fun GuiGraphicsExtractor.nameTag(tag: Bounds, segments: NameTagSegments) {
     }
 }
 
-fun GuiGraphicsExtractor.nameTag(target: Bounds, anchor: BoxAnchor, segments: NameTagSegments) {
-    if (segments.isNotEmpty()) nameTag(nameTagBounds(target, anchor, segments), segments)
+fun GuiGraphicsExtractor.nameTag(target: Bounds, position: LabelPosition, segments: NameTagSegments) {
+    if (segments.isNotEmpty()) nameTag(nameTagBounds(target, position, segments), segments)
 }

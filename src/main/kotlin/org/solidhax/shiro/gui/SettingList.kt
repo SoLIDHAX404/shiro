@@ -272,7 +272,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     private fun drawPreview(graphics: GuiGraphicsExtractor, preview: EntityPreview, x: Float, y: Float, width: Float, height: Float) {
         graphics.roundedRectangle(x, y, width, height, theme.card, Radius.LARGE)
         preview.draw(graphics, x, y, width, height)
-        val hint = if (preview.label?.anchor != null) LABEL_HINT else HINT
+        val hint = if (preview.label?.position != null) LABEL_HINT else HINT
         graphics.text(hint, x + (width - textWidth(hint)) / 2f, y + height + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
     }
 
