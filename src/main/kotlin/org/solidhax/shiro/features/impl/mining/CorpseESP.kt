@@ -23,8 +23,8 @@ object CorpseESP : Module(
 ) {
     private const val ARMOR_COLOR = 0x1A2A6C
 
-    private val showType by BooleanSetting("Show Type", true, desc = "Shows the type of each corpse.")
-    private val showDistance by BooleanSetting("Show Distance", true, desc = "Shows how far away each corpse is.")
+    private val showType by BooleanSetting("Show Type", false, desc = "Shows the type of each corpse.")
+    private val showDistance by BooleanSetting("Show Distance", false, desc = "Shows how far away each corpse is.")
     private val announceToParty by BooleanSetting("Announce to Party", false, desc = "Sends found corpses to party chat.")
     private val highlightColor by ColorSetting("Highlight Color", 0xFFFFAA00.toInt(), desc = "Color used to highlight corpses.")
 
