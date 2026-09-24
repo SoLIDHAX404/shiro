@@ -15,7 +15,7 @@ import org.solidhax.shiro.Shiro.mc
 
 const val TEXT_SIZE = 8f
 
-private const val ACCENT_WIDTH = 2f
+const val ACCENT_WIDTH = 2f
 
 val font: FontRenderer get() = CascadeFonts.sans
 
