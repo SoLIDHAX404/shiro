@@ -1,6 +1,9 @@
 package org.solidhax.shiro.features.impl.mining
 
 import com.mojang.authlib.GameProfile
+import foo.starred.cascade.graphics.extensions.scissor.scissor
+import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.player.RemotePlayer
 import net.minecraft.client.resources.DefaultPlayerSkin
 import net.minecraft.core.component.DataComponents
@@ -11,10 +14,12 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.DyedItemColor
 import org.solidhax.shiro.events.EntityGlowEvent
+import org.solidhax.shiro.events.HudRenderEvent
 import org.solidhax.shiro.events.LevelEvent
 import org.solidhax.shiro.events.TickEvent
 import org.solidhax.shiro.events.core.on
 import org.solidhax.shiro.features.Module
+import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.DummyEntity
 import org.solidhax.shiro.gui.EntityPreview
 import org.solidhax.shiro.gui.settings.Setting.Companion.withDependency
@@ -24,7 +29,10 @@ import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
+import org.solidhax.shiro.utils.ui.nameTag
+import org.solidhax.shiro.utils.ui.worldToScreen
 import java.util.UUID
+import kotlin.math.roundToInt
 
 object CorpseESP : Module(
     name = "Corpse ESP",
@@ -34,7 +42,7 @@ object CorpseESP : Module(
 
     private val corpseBreakdown by HUD("Corpse Breakdown HUD", "An example HUD element.") { 10f to 10f }
 
-    private val preview = +PreviewSetting("Preview", EntityPreview(DummyEntity { RemotePlayer(it, GameProfile(UUID(0L, 0L), "Steve")) }) {
+    private val preview = +PreviewSetting("Preview", EntityPreview(DummyEntity { RemotePlayer(it, GameProfile(UUID(0L, 0L), "Steve")) }, overlay = ::drawPreviewNameTag) {
         skin = DefaultPlayerSkin.getDefaultSkin()
         sitting = true
         equipment[EquipmentSlot.HEAD] = ItemStack(Items.SEA_LANTERN)
@@ -61,6 +69,16 @@ object CorpseESP : Module(
             if (settings.highlight.value) color = settings.color.value
         }
 
+        on<HudRenderEvent> {
+            val player = mc.player ?: return@on
+            for ((entity, type) in corpses) {
+                val segments = nameTagSegments(type, player.distanceTo(entity).roundToInt())
+                if (segments.isEmpty()) continue
+                val screen = worldToScreen(entity.position().add(0.0, entity.bbHeight + NAMETAG_HEIGHT, 0.0)) ?: continue
+                graphics.nameTag(screen.x, screen.y, segments)
+            }
+        }
+
         on<LevelEvent.Load> {
             corpses.clear()
         }
@@ -73,10 +91,26 @@ object CorpseESP : Module(
         val dropdown = +DropdownSetting("${type.displayName} Corpse")
         return CorpseSettings(
             highlight = +BooleanSetting("Highlight", false, desc = "Highlights $name corpses.").withDependency(dropdown),
+            showType = +BooleanSetting("Show Type", false, desc = "Shows the type above each $name corpse.").withDependency(dropdown),
             showDistance = +BooleanSetting("Show Distance", false, desc = "Shows how far away each $name corpse is.").withDependency(dropdown),
             announceToParty = +BooleanSetting("Announce to Party", false, desc = "Sends found $name corpses to party chat.").withDependency(dropdown),
             color = +ColorSetting("Highlight Color", type.defaultColor, desc = "Color used to highlight $name corpses.").withDependency(dropdown),
         )
+    }
+
+    private fun nameTagSegments(type: CorpseType, distance: Int): List<Pair<String, CascadeGeometricColor>> {
+        val settings = type.settings
+        return buildList {
+            if (settings.showType.value) add("${type.displayName} Corpse" to CascadeGeometricColor(settings.color.value))
+            if (settings.showDistance.value) add((if (isEmpty()) "" else " ") + "${distance}m" to theme.textMuted)
+        }
+    }
+
+    private fun drawPreviewNameTag(graphics: GuiGraphicsExtractor, preview: EntityPreview) {
+        val segments = nameTagSegments(CorpseType.LAPIS, PREVIEW_DISTANCE)
+        graphics.scissor(preview.x, preview.y, preview.width, preview.height) {
+            graphics.nameTag(preview.x + preview.width / 2f, preview.modelTop - PREVIEW_NAMETAG_OFFSET * preview.blockSize, segments)
+        }
     }
 
     private fun leather(item: Item): ItemStack = ItemStack(item).apply { set(DataComponents.DYED_COLOR, DyedItemColor(ARMOR_COLOR)) }
@@ -94,10 +128,14 @@ object CorpseESP : Module(
 
     private class CorpseSettings(
         val highlight: BooleanSetting,
+        val showType: BooleanSetting,
         val showDistance: BooleanSetting,
         val announceToParty: BooleanSetting,
         val color: ColorSetting,
     )
 
     private const val ARMOR_COLOR = 0x1A2A6C
+    private const val NAMETAG_HEIGHT = 0.5
+    private const val PREVIEW_NAMETAG_OFFSET = 0.22f
+    private const val PREVIEW_DISTANCE = 12
 }

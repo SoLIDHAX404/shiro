@@ -2,6 +2,7 @@ package org.solidhax.shiro.events
 
 import net.fabricmc.fabric.api.client.rendering.v1.level.AbstractLevelRenderContext
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.network.protocol.Packet
 import net.minecraft.world.entity.Entity
@@ -30,6 +31,8 @@ abstract class PacketEvent(val packet: Packet<*>) : CancellableEvent() {
 }
 
 object LocationChangeEvent : Event
+
+class HudRenderEvent(val graphics: GuiGraphicsExtractor) : Event
 
 class EntityGlowEvent(val entity: Entity) : Event {
     var color: Int? = null

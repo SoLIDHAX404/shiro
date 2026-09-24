@@ -5,6 +5,7 @@ import net.minecraft.client.DeltaTracker
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.config.ModuleConfig
+import org.solidhax.shiro.events.HudRenderEvent
 import org.solidhax.shiro.gui.HudEditor
 import org.solidhax.shiro.gui.settings.impl.HudSetting
 import org.solidhax.shiro.utils.ui.animation.AnimationManager
@@ -50,6 +51,7 @@ object ModuleManager {
     fun renderHud(graphics: GuiGraphicsExtractor, @Suppress("UNUSED_PARAMETER") deltaTracker: DeltaTracker) {
         if (mc.level == null || mc.player == null || mc.gui.screen() == HudEditor || mc.gui.hud.isHidden) return
         AnimationManager.update()
+        HudRenderEvent(graphics).postAndCatch()
         for (setting in hudSettings) {
             if (setting.isEnabled) setting.value.draw(graphics, false)
         }
