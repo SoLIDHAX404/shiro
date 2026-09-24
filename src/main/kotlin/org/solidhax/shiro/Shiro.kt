@@ -12,6 +12,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.solidhax.shiro.commands.mainCommand
 import org.solidhax.shiro.config.ModuleConfig
+import org.solidhax.shiro.events.EventDispatcher
+import org.solidhax.shiro.events.core.EventBus
 import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.misc.ArrayListModule
@@ -30,6 +32,8 @@ object Shiro : ClientModInitializer {
     val configDir: File = FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile()
 
     override fun onInitializeClient() {
+        EventBus.subscribe(EventDispatcher)
+
         ModuleManager.registerModules(
             ModuleConfig("shiro-config.json"),
             TestModule,

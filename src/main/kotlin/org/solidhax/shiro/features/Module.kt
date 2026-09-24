@@ -2,6 +2,7 @@ package org.solidhax.shiro.features
 
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import org.solidhax.shiro.Shiro
+import org.solidhax.shiro.events.core.EventBus
 import org.solidhax.shiro.gui.settings.Setting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.HudSetting
@@ -27,9 +28,20 @@ abstract class Module(
 
     val isDevModule = this::class.java.isAnnotationPresent(DevModule::class.java)
 
-    open fun onEnable() {}
+    val alwaysActive = this::class.java.isAnnotationPresent(AlwaysActive::class.java)
 
-    open fun onDisable() {}
+    init {
+        @Suppress("LeakingThis")
+        if (alwaysActive || enabled) EventBus.subscribe(this)
+    }
+
+    open fun onEnable() {
+        if (!alwaysActive) EventBus.subscribe(this)
+    }
+
+    open fun onDisable() {
+        if (!alwaysActive) EventBus.unsubscribe(this)
+    }
 
     fun toggle() {
         enabled = !enabled

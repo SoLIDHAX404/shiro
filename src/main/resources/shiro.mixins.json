@@ -8,7 +8,8 @@
   "client": [
     "AbstractClientPlayerMixin",
     "FontMixin",
-    "AvatarRendererMixin"
+    "AvatarRendererMixin",
+    "ConnectionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

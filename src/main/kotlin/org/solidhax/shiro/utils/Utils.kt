@@ -2,6 +2,7 @@ package org.solidhax.shiro.utils
 
 import net.minecraft.client.resources.DefaultPlayerSkin
 import net.minecraft.resources.Identifier
+import org.solidhax.shiro.Shiro.logger
 import org.solidhax.shiro.Shiro.mc
 
 private var cachedName = ""
@@ -24,3 +25,6 @@ fun displayName(maxWidth: Float, size: Float): String {
     }
     return cachedDisplayName
 }
+
+fun logError(throwable: Throwable, context: Any) =
+    logger.error("Caught an ${throwable::class.simpleName ?: "error"} at ${context::class.simpleName}.", throwable)
