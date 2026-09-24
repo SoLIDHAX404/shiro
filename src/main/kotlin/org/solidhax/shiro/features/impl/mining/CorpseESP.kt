@@ -27,22 +27,22 @@ import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import java.util.UUID
 
-enum class CorpseType(val displayName: String, val helmetName: String, val defaultColor: Int) {
-    LAPIS("Lapis", "Lapis Armor Helmet", 0xFF5555FF.toInt()),
-    UMBER("Umber", "Yog Helmet", 0xFFFFAA00.toInt()),
-    TUNGSTEN("Tungsten", "Mineral Helmet", 0xFFAAAAAA.toInt()),
-    VANGUARD("Vanguard", "Vanguard Helmet", 0xFF55FFFF.toInt());
-
-    companion object {
-        fun fromHelmet(name: String?): CorpseType? = entries.find { it.helmetName == name }
-    }
-}
-
 object CorpseESP : Module(
     name = "Corpse ESP",
     description = "Highlights corpses in Glacite Mineshafts."
 ) {
     private const val ARMOR_COLOR = 0x1A2A6C
+
+    enum class CorpseType(val displayName: String, val helmetName: String, val defaultColor: Int) {
+        LAPIS("Lapis", "Lapis Armor Helmet", 0xFF5555FF.toInt()),
+        UMBER("Umber", "Yog Helmet", 0xFFFFAA00.toInt()),
+        TUNGSTEN("Tungsten", "Mineral Helmet", 0xFFAAAAAA.toInt()),
+        VANGUARD("Vanguard", "Vanguard Helmet", 0xFF55FFFF.toInt());
+
+        companion object {
+            fun fromHelmet(name: String?): CorpseType? = entries.find { it.helmetName == name }
+        }
+    }
 
     private class CorpseSettings(
         val highlight: BooleanSetting,
