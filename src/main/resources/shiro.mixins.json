@@ -8,13 +8,16 @@
   "client": [
     "AbstractClientPlayerMixin",
     "FontMixin",
+    "GameRendererMixin",
     "AvatarRendererMixin",
     "CameraMixin",
     "ConnectionMixin",
     "EntityRendererMixin",
     "LevelExtractorMixin",
     "LivingEntityRendererInvoker",
-    "ModelPartAccessor"
+    "ModelPartAccessor",
+    "PostChainAccessor",
+    "PostPassAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
