@@ -13,6 +13,7 @@ typealias NameTagSegments = List<Pair<String, CascadeGeometricColor>>
 
 private const val NAMETAG_PADDING = 4f
 private const val NAMETAG_GAP = 2f
+private const val NAMETAG_SNAP = 4f
 
 /**
  * Projects a world position onto the GUI-scaled screen, or null when it is behind the camera.
@@ -50,13 +51,12 @@ fun nameTagBounds(target: Bounds, position: LabelPosition, segments: NameTagSegm
 }
 
 /**
- * The position whose name tag around [target] is centered closest to ([x], [y]).
+ * The position around [target] whose name tag is centered closest to ([x], [y]), snapping to the middle of a side.
  */
-fun nearestNameTagPosition(target: Bounds, segments: NameTagSegments, x: Float, y: Float): LabelPosition =
-    LabelPosition.entries.minBy { position ->
-        val tag = nameTagBounds(target, position, segments)
-        (tag.centerX - x) * (tag.centerX - x) + (tag.centerY - y) * (tag.centerY - y)
-    }
+fun nearestNameTagPosition(target: Bounds, segments: NameTagSegments, x: Float, y: Float): LabelPosition {
+    val size = nameTagBounds(target, LabelPosition.TOP, segments)
+    return LabelPosition.nearest(target.expand(NAMETAG_GAP), size.width, size.height, x, y, NAMETAG_SNAP)
+}
 
 fun GuiGraphicsExtractor.nameTag(tag: Bounds, segments: NameTagSegments) {
     roundedRectangle(tag.left, tag.top, tag.width, tag.height, theme.card, Radius.MEDIUM)

@@ -170,14 +170,7 @@ class EntityPreview(
         labelBounds = tag
 
         graphics.scissor(x, y, width, height) {
-            if (draggingLabel) {
-                graphics.hollowRectangle(bounds.left, bounds.top, bounds.width, bounds.height, 1f, ClickGUI.theme.divider, Radius.SMALL)
-                for (slot in LabelPosition.entries) {
-                    if (slot == position) continue
-                    val target = nameTagBounds(bounds, slot, segments)
-                    graphics.hollowRectangle(target.left, target.top, target.width, target.height, 1f, ClickGUI.theme.divider, Radius.MEDIUM)
-                }
-            }
+            if (draggingLabel) graphics.hollowRectangle(bounds.left, bounds.top, bounds.width, bounds.height, 1f, ClickGUI.theme.divider, Radius.SMALL)
             graphics.nameTag(tag, segments)
         }
     }
@@ -333,7 +326,7 @@ class DummyEntity<T : Entity>(private val create: (ClientLevel) -> T?) : () -> T
 }
 
 /**
- * A name tag drawn around the preview's bounding box. With a [position] setting it can be dragged to any side of the box
- * in the preview, which stores the side there; without one it stays on top.
+ * A name tag drawn around the preview's bounding box. With a [position] setting it can be dragged anywhere around the box
+ * in the preview, which stores where it sits there; without one it stays on top.
  */
 class PreviewLabel(val position: LabelPositionSetting? = null, val segments: () -> NameTagSegments)

@@ -1,6 +1,7 @@
 package org.solidhax.shiro.utils.ui
 
 import org.joml.Vector2f
+import kotlin.math.abs
 
 data class Bounds(val left: Float, val top: Float, val right: Float, val bottom: Float) {
 
@@ -34,18 +35,52 @@ data class Bounds(val left: Float, val top: Float, val right: Float, val bottom:
 }
 
 /**
- * Which side of some [Bounds] a label sits on, centered along that side and just outside it.
+ * Where a label sits around some [Bounds]: just outside one [side], [along] that side from 0 (its top/left end) to 1 (its
+ * bottom/right end). The ends reach past the corners, so a label can go anywhere around the bounds.
  */
-enum class LabelPosition(private val x: Float, private val y: Float) {
-    TOP(0.5f, 0f),
-    BOTTOM(0.5f, 1f),
-    LEFT(0f, 0.5f),
-    RIGHT(1f, 0.5f);
+data class LabelPosition(val side: Side, val along: Float) {
 
-    // x and y go from 0 (label fully before the left/top edge) to 1 (fully past the right/bottom edge)
-    fun place(bounds: Bounds, width: Float, height: Float): Bounds = Bounds.centered(
-        bounds.left - width / 2f + x * (bounds.width + width),
-        bounds.top - height / 2f + y * (bounds.height + height),
-        width, height
-    )
+    enum class Side { TOP, BOTTOM, LEFT, RIGHT }
+
+    fun place(bounds: Bounds, width: Float, height: Float): Bounds {
+        val track = track(bounds, width, height)
+        return when (side) {
+            Side.TOP -> Bounds.centered(lerp(track.left, track.right, along), track.top, width, height)
+            Side.BOTTOM -> Bounds.centered(lerp(track.left, track.right, along), track.bottom, width, height)
+            Side.LEFT -> Bounds.centered(track.left, lerp(track.top, track.bottom, along), width, height)
+            Side.RIGHT -> Bounds.centered(track.right, lerp(track.top, track.bottom, along), width, height)
+        }
+    }
+
+    companion object {
+        val TOP = LabelPosition(Side.TOP, 0.5f)
+
+        /**
+         * The position whose label is centered closest to ([x], [y]), pulled to the middle of its side when within [snap].
+         */
+        fun nearest(bounds: Bounds, width: Float, height: Float, x: Float, y: Float, snap: Float = 0f): LabelPosition {
+            val track = track(bounds, width, height)
+            val trackX = x.coerceIn(track.left, track.right)
+            val trackY = y.coerceIn(track.top, track.bottom)
+            val side = listOf(
+                Side.TOP to trackY - track.top,
+                Side.BOTTOM to track.bottom - trackY,
+                Side.LEFT to trackX - track.left,
+                Side.RIGHT to track.right - trackX,
+            ).minBy { it.second }.first
+
+            val horizontal = side == Side.TOP || side == Side.BOTTOM
+            val start = if (horizontal) track.left else track.top
+            val end = if (horizontal) track.right else track.bottom
+            val value = if (horizontal) trackX else trackY
+            if (abs(value - (start + end) / 2f) <= snap) return LabelPosition(side, 0.5f)
+            return LabelPosition(side, ((value - start) / (end - start)).coerceIn(0f, 1f))
+        }
+
+        // the path a label's center follows: the bounds grown by half the label, so the label always just touches them
+        private fun track(bounds: Bounds, width: Float, height: Float): Bounds =
+            Bounds(bounds.left - width / 2f, bounds.top - height / 2f, bounds.right + width / 2f, bounds.bottom + height / 2f)
+
+        private fun lerp(start: Float, end: Float, amount: Float): Float = start + (end - start) * amount
+    }
 }
