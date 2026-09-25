@@ -27,7 +27,9 @@ import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
+import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.ModelBounds
+import org.solidhax.shiro.utils.render.itemStack
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.ui.NameTagSegments
@@ -54,6 +56,11 @@ object CorpseESP : Module(
         equipment[EquipmentSlot.LEGS] = leather(Items.LEATHER_LEGGINGS)
         equipment[EquipmentSlot.FEET] = leather(Items.LEATHER_BOOTS)
     })
+
+    private val breakdownHud by HUD("Corpse Breakdown", "Shows a breakdown of the corpses in the mineshaft.") {
+        itemStack(SEA_LANTERN, 0f, 0f)
+        ItemRenderer.ITEM_SIZE to ItemRenderer.ITEM_SIZE
+    }
 
     private val corpses = HashMap<ArmorStand, CorpseType>()
 
@@ -129,5 +136,6 @@ object CorpseESP : Module(
     )
 
     private const val ARMOR_COLOR = 0x1A2A6C
+    private val SEA_LANTERN by lazy { ItemStack(Items.SEA_LANTERN) }
     private const val PREVIEW_DISTANCE = 12
 }

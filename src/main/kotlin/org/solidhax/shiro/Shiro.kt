@@ -3,6 +3,7 @@ package org.solidhax.shiro
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
+import net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.fabricmc.loader.api.FabricLoader
@@ -19,6 +20,7 @@ import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.misc.ArrayListModule
 import org.solidhax.shiro.features.impl.misc.AspectRatio
 import org.solidhax.shiro.features.impl.misc.TestModule
+import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.RenderBatchManager
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import java.io.File
@@ -44,6 +46,8 @@ object Shiro : ClientModInitializer {
             ArrayListModule,
             AspectRatio,
         )
+
+        PictureInPictureRendererRegistry.register { ItemRenderer() }
 
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath(MOD_ID, "hud"), ModuleManager::renderHud)
 
