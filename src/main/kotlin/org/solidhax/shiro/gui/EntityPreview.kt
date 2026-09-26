@@ -62,7 +62,7 @@ class EntityPreview(
 
     var armorStandPose: ArmorStandPose? = null
 
-    var skin: PlayerSkin? = null
+    var skin: (() -> PlayerSkin)? = null
 
     var sitting = false
 
@@ -123,7 +123,7 @@ class EntityPreview(
             state.scale = 1f
             if (entity is LivingEntity) applyEquipment(state, entity)
         }
-        if (state is AvatarRenderState) skin?.let { state.skin = it }
+        if (state is AvatarRenderState) skin?.let { state.skin = it() }
         if (state is ArmorStandRenderState) {
             state.yRot = FACING
             state.wiggle = 0f

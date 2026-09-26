@@ -17,6 +17,7 @@ import org.solidhax.shiro.events.EventDispatcher
 import org.solidhax.shiro.events.core.EventBus
 import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.features.impl.mining.CorpseESP
+import org.solidhax.shiro.features.impl.mining.LittlefootESP
 import org.solidhax.shiro.features.impl.misc.ArrayListModule
 import org.solidhax.shiro.features.impl.misc.AspectRatio
 import org.solidhax.shiro.features.impl.misc.TestModule
@@ -43,6 +44,7 @@ object Shiro : ClientModInitializer {
             ModuleConfig("shiro-config.json"),
             TestModule,
             CorpseESP,
+            LittlefootESP,
             ArrayListModule,
             AspectRatio,
         )

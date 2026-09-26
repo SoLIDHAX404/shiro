@@ -147,7 +147,7 @@ object CorpseESP : Module(
     }
 
     private fun corpsePreview(type: CorpseType) = EntityPreview(previewCorpse, type.displayName, PreviewLabel(nameTagPosition) { nameTagSegments(type, PREVIEW_DISTANCE) }) {
-        skin = DefaultPlayerSkin.getDefaultSkin()
+        skin = DefaultPlayerSkin::getDefaultSkin
         sitting = true
         equipment[EquipmentSlot.HEAD] = type.icon
         equipment[EquipmentSlot.CHEST] = leather(Items.LEATHER_CHESTPLATE, type.armorColor)
