@@ -3,11 +3,14 @@ package org.solidhax.shiro.utils.ui
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import org.joml.Vector2f
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.render.ModelBounds
+import org.solidhax.shiro.utils.render.corners
 
 typealias NameTagSegments = List<Pair<String, CascadeGeometricColor>>
 
@@ -34,12 +37,12 @@ fun worldToScreen(pos: Vec3): Vector2f? {
 /**
  * The on-screen rectangle covering [box], or null when any of its corners is behind the camera.
  */
-fun screenBounds(box: AABB): Bounds? {
-    val corners = ArrayList<Vector2f>(8)
-    for (x in doubleArrayOf(box.minX, box.maxX)) for (y in doubleArrayOf(box.minY, box.maxY)) for (z in doubleArrayOf(box.minZ, box.maxZ)) {
-        corners += worldToScreen(Vec3(x, y, z)) ?: return null
-    }
-    return Bounds.of(corners)
+fun screenBounds(box: AABB): Bounds? =
+    Bounds.of(box.corners.map { worldToScreen(it) ?: return null })
+
+fun labelSegments(title: String?, titleColor: Int, distance: Int?): NameTagSegments = buildList {
+    if (title != null) add(title to CascadeGeometricColor(titleColor))
+    if (distance != null) add((if (isEmpty()) "" else " ") + "${distance}m" to theme.textMuted)
 }
 
 /**
@@ -69,4 +72,9 @@ fun GuiGraphicsExtractor.nameTag(tag: Bounds, segments: NameTagSegments) {
 
 fun GuiGraphicsExtractor.nameTag(target: Bounds, position: LabelPosition, segments: NameTagSegments) {
     if (segments.isNotEmpty()) nameTag(nameTagBounds(target, position, segments), segments)
+}
+
+fun GuiGraphicsExtractor.entityNameTag(entity: Entity, partialTick: Float, position: LabelPosition, segments: NameTagSegments) {
+    if (segments.isEmpty()) return
+    nameTag(screenBounds(ModelBounds.of(entity, partialTick)) ?: return, position, segments)
 }

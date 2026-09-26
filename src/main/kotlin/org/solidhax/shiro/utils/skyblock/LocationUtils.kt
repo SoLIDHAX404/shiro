@@ -10,7 +10,6 @@ import org.solidhax.shiro.events.LocationChangeEvent
 import org.solidhax.shiro.events.core.EventPriority
 import org.solidhax.shiro.events.core.on
 import org.solidhax.shiro.events.core.onReceive
-import org.solidhax.shiro.utils.equalsOneOf
 import org.solidhax.shiro.utils.noControlCodes
 import org.solidhax.shiro.utils.startsWithOneOf
 import kotlin.jvm.optionals.getOrNull
@@ -33,7 +32,7 @@ object LocationUtils {
 
     init {
         onReceive<ClientboundPlayerInfoUpdatePacket> {
-            if (!isCurrentArea(Island.Unknown) || actions().none { it.equalsOneOf(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME) }) return@onReceive
+            if (!isCurrentArea(Island.Unknown) || ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME !in actions()) return@onReceive
             val area = entries().find { it.displayName?.string?.startsWithOneOf("Area: ", "Dungeon: ") == true }?.displayName?.string ?: return@onReceive
             currentArea = Island.entries.firstOrNull { area.contains(it.displayName, true) } ?: Island.Unknown
         }
@@ -42,7 +41,7 @@ object LocationUtils {
             if (!isInSkyblock) isInSkyblock = objectiveName == "SBScoreboard"
         }
 
-        onReceive<ClientboundSetPlayerTeamPacket> (EventPriority.LOW) {
+        onReceive<ClientboundSetPlayerTeamPacket>(EventPriority.LOW) {
             if (!isCurrentArea(Island.Unknown)) return@onReceive
             val text = parameters.getOrNull()?.let { it.playerPrefix.string.plus(it.playerSuffix.string).noControlCodes } ?: return@onReceive
 

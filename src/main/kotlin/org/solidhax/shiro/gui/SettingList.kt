@@ -27,15 +27,23 @@ import org.solidhax.shiro.gui.settings.impl.PreviewSetting
 import org.solidhax.shiro.gui.settings.impl.RangeSetting
 import org.solidhax.shiro.gui.settings.impl.SelectorSetting
 import org.solidhax.shiro.gui.settings.impl.StringSetting
+import org.solidhax.shiro.utils.shiroId
+import org.solidhax.shiro.utils.ui.BLACK
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.TEXT_SIZE
+import org.solidhax.shiro.utils.ui.TRANSPARENT
+import org.solidhax.shiro.utils.ui.WHITE
 import org.solidhax.shiro.utils.ui.animation.Animations
+import org.solidhax.shiro.utils.ui.centeredText
+import org.solidhax.shiro.utils.ui.fade
 import org.solidhax.shiro.utils.ui.icon
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.lerpColor
+import org.solidhax.shiro.utils.ui.outlinedRectangle
 import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
 import kotlin.math.PI
+import org.solidhax.shiro.utils.ui.withAlpha
 
 class SettingList(var settings: Collection<Setting<*>> = emptyList(), private val topPadding: Float = PADDING) : Page {
 
@@ -177,17 +185,16 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
 
             is DropdownSetting -> graphics.icon(
                 ModuleButton.CHEVRON, right - ICON_SIZE, textY + (TEXT_SIZE - ICON_SIZE) / 2f, ICON_SIZE,
-                lerpColor(theme.textMuted, theme.text, hover), QUARTER_TURN * stateAnimations[setting].animate(setting.enabled)
+                theme.textHover(hover), QUARTER_TURN * stateAnimations[setting].animate(setting.enabled)
             )
 
             is ActionSetting -> {
                 val press = pressAnimations[setting].value
-                val tint = theme.accent and 0xFFFFFF
-                graphics.roundedRectangle(x, y, width, CARD_HEIGHT, lerpColor(tint, tint or PRESS_ALPHA, press), corners)
+                graphics.roundedRectangle(x, y, width, CARD_HEIGHT, fade(withAlpha(theme.accent, PRESS_ALPHA), press), corners)
 
                 val size = TEXT_SIZE * (1f - PRESS_SHRINK * press)
-                val color = lerpColor(lerpColor(theme.textMuted, theme.text, hover), CascadeGeometricColor(theme.accent), press)
-                graphics.text(setting.name, x + (width - textWidth(setting.name, size)) / 2f, y + (CARD_HEIGHT - size) / 2f, color, size)
+                val color = lerpColor(theme.textHover(hover), CascadeGeometricColor(theme.accent), press)
+                graphics.centeredText(setting.name, x + width / 2f, y + (CARD_HEIGHT - size) / 2f, color, size)
             }
 
             is KeybindSetting -> drawKeybind(graphics, setting, textY, hover)
@@ -200,15 +207,14 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
 
             is ColorSetting -> {
                 val swatchY = textY + (TEXT_SIZE - SWATCH_HEIGHT) / 2f
-                graphics.roundedRectangle(right - SWATCH_WIDTH, swatchY, SWATCH_WIDTH, SWATCH_HEIGHT, setting.value, Radius.SMALL)
-                graphics.hollowRectangle(right - SWATCH_WIDTH, swatchY, SWATCH_WIDTH, SWATCH_HEIGHT, 1f, theme.divider, Radius.SMALL)
+                graphics.outlinedRectangle(right - SWATCH_WIDTH, swatchY, SWATCH_WIDTH, SWATCH_HEIGHT, setting.value, theme.divider, Radius.SMALL)
                 if (setting.expanded) drawPicker(graphics, setting, y + CARD_HEIGHT + PICKER_GAP)
             }
 
             is CapeSetting -> capeSelector(setting).draw(graphics, left, controlY(y), inner, mouseX, mouseY)
 
             is HudSetting -> {
-                graphics.icon(MOVE, right - ICON_SIZE, textY + (TEXT_SIZE - ICON_SIZE) / 2f, ICON_SIZE, lerpColor(theme.textMuted, theme.text, hover))
+                graphics.icon(MOVE, right - ICON_SIZE, textY + (TEXT_SIZE - ICON_SIZE) / 2f, ICON_SIZE, theme.textHover(hover))
                 if (setting.toggleable) {
                     Checkbox.draw(graphics, hudCheckboxX, textY + (TEXT_SIZE - Checkbox.SIZE) / 2f, hovered, stateAnimations[setting].animate(setting.value.enabled))
                 }
@@ -298,19 +304,18 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         if (setting.cycles) drawSwitcher(graphics, setting, mouseX, mouseY)
         preview.draw(graphics, x, y + header, width, height - header)
         val hint = if (preview.label?.position != null) LABEL_HINT else HINT
-        graphics.text(hint, x + (width - textWidth(hint)) / 2f, y + height + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
+        graphics.centeredText(hint, x + width / 2f, y + height + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
     }
 
     private fun drawSwitcher(graphics: GuiGraphicsExtractor, setting: PreviewSetting, mouseX: Float, mouseY: Float) {
-        val name = setting.value.name
         val textY = previewY + (SWITCHER_HEIGHT - TEXT_SIZE) / 2f
-        graphics.text(name, previewX + (previewWidth - textWidth(name)) / 2f, textY, theme.text)
+        graphics.centeredText(setting.value.name, previewX + previewWidth / 2f, textY, theme.text)
 
         val hovered = hoveredArrow(setting, mouseX, mouseY)
         for (direction in ARROWS) {
             val hover = arrowAnimations[direction].animate(hovered == direction)
             val rotation = if (direction < 0) PI.toFloat() else 0f
-            graphics.icon(ModuleButton.CHEVRON, arrowX(setting, direction), textY + (TEXT_SIZE - ICON_SIZE) / 2f, ICON_SIZE, lerpColor(theme.textMuted, theme.text, hover), rotation)
+            graphics.icon(ModuleButton.CHEVRON, arrowX(setting, direction), textY + (TEXT_SIZE - ICON_SIZE) / 2f, ICON_SIZE, theme.textHover(hover), rotation)
         }
     }
 
@@ -336,14 +341,14 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         val boxX = right - boxWidth
         val boxY = textY + (TEXT_SIZE - KEY_HEIGHT) / 2f
 
-        graphics.roundedRectangle(boxX, boxY, boxWidth, KEY_HEIGHT, lerpColor(theme.control, theme.controlHovered, hover), Radius.MEDIUM)
+        graphics.roundedRectangle(boxX, boxY, boxWidth, KEY_HEIGHT, theme.controlHover(hover), Radius.MEDIUM)
         if (listening == setting) graphics.hollowRectangle(boxX, boxY, boxWidth, KEY_HEIGHT, 1f, theme.accent, Radius.MEDIUM)
         graphics.text(label, boxX + (boxWidth - labelWidth) / 2f, textY, theme.text)
     }
 
     private fun drawPicker(graphics: GuiGraphicsExtractor, setting: ColorSetting, squareY: Float) {
         graphics.roundedRectangle(left, squareY, inner, SQUARE_HEIGHT, CascadeGeometricColor(WHITE, setting.hueColor, WHITE, setting.hueColor), Radius.MEDIUM)
-        graphics.roundedRectangle(left, squareY, inner, SQUARE_HEIGHT, CascadeGeometricColor(CLEAR, CLEAR, BLACK, BLACK), Radius.MEDIUM)
+        graphics.roundedRectangle(left, squareY, inner, SQUARE_HEIGHT, CascadeGeometricColor(TRANSPARENT, TRANSPARENT, BLACK, BLACK), Radius.MEDIUM)
         graphics.handle(left + setting.saturation * inner, squareY + (1f - setting.brightness) * SQUARE_HEIGHT)
 
         val hueY = squareY + SQUARE_HEIGHT + PICKER_GAP
@@ -381,7 +386,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         private const val KEY_MIN_WIDTH = 34f
         private const val STATE_DURATION = 180L
         private const val PRESS_DURATION = 450L
-        private const val PRESS_ALPHA = 0x40000000
+        private const val PRESS_ALPHA = 0x40
         private const val PRESS_SHRINK = 0.08f
         private const val QUARTER_TURN = (PI / 2.0).toFloat()
         private const val LISTENING = "..."
@@ -406,11 +411,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         private const val CARD_HEIGHT = TEXT_SIZE + INNER_PADDING * 2f
         private const val TEXT_CARD_HEIGHT = TextField.HEIGHT + INNER_PADDING * 2f
 
-        private const val WHITE = 0xFFFFFFFF.toInt()
-        private const val BLACK = 0xFF000000.toInt()
-        private const val CLEAR = 0x00000000
-
-        private val MOVE: Identifier = Identifier.fromNamespaceAndPath("shiro", "move.svg")
+        private val MOVE: Identifier = shiroId("move.svg")
 
         private val HUE_STOPS = intArrayOf(0xFFFF0000.toInt(), 0xFFFFFF00.toInt(), 0xFF00FF00.toInt(), 0xFF00FFFF.toInt(), 0xFF0000FF.toInt(), 0xFFFF00FF.toInt())
 

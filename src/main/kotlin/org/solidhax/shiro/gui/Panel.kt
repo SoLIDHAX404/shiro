@@ -1,18 +1,15 @@
 package org.solidhax.shiro.gui
 
 import com.mojang.blaze3d.platform.InputConstants
-import foo.starred.cascade.graphics.extensions.blur.blur
-import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.solid.rectangle
-import foo.starred.cascade.graphics.extensions.shadow.dropShadow
-import foo.starred.cascade.graphics.geometry.CascadeGeometricOffset
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import org.solidhax.shiro.cosmetics.CosmeticsManager
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.utils.ui.Radius
+import org.solidhax.shiro.utils.ui.glassPanel
 import org.solidhax.shiro.utils.ui.text
 
 class Panel(private val title: String) {
@@ -32,19 +29,16 @@ class Panel(private val title: String) {
         }
 
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, mouseX: Float, mouseY: Float) {
-        graphics.dropShadow(x, y, WIDTH, HEIGHT, CascadeGeometricOffset(0f, 2f), 10f, 0f, theme.shadow, Radius.LARGE)
-        graphics.blur(x, y, WIDTH, HEIGHT, theme.panelTint, Radius.LARGE, 30f)
+        graphics.glassPanel(x, y, WIDTH, HEIGHT) {
+            graphics.roundedRectangle(x, y, WIDTH, HEADER_HEIGHT, theme.headerTint, Radius.TOP)
+            graphics.rectangle(x, y + HEADER_HEIGHT, WIDTH, 1f, theme.divider)
+            graphics.text(title, x + Sidebar.TEXT_X, y + (HEADER_HEIGHT - TITLE_SIZE) / 2f, theme.text, TITLE_SIZE)
+            searchBar.draw(graphics, x + WIDTH - SEARCH_MARGIN - SearchBar.WIDTH, y + (HEADER_HEIGHT - SearchBar.HEIGHT) / 2f)
 
-        graphics.roundedRectangle(x, y, WIDTH, HEADER_HEIGHT, theme.headerTint, Radius.TOP)
-        graphics.rectangle(x, y + HEADER_HEIGHT, WIDTH, 1f, theme.divider)
-        graphics.text(title, x + Sidebar.TEXT_X, y + (HEADER_HEIGHT - TITLE_SIZE) / 2f, theme.text, TITLE_SIZE)
-        searchBar.draw(graphics, x + WIDTH - SEARCH_MARGIN - SearchBar.WIDTH, y + (HEADER_HEIGHT - SearchBar.HEIGHT) / 2f)
-
-        val bodyY = y + HEADER_HEIGHT + 1f
-        sidebar.draw(graphics, x, bodyY, mouseX, mouseY)
-        page.draw(graphics, x + Sidebar.WIDTH + 1f, bodyY, WIDTH - Sidebar.WIDTH - 1f, Sidebar.HEIGHT, mouseX, mouseY)
-
-        graphics.hollowRectangle(x, y, WIDTH, HEIGHT, 1f, theme.border, Radius.LARGE)
+            val bodyY = y + HEADER_HEIGHT + 1f
+            sidebar.draw(graphics, x, bodyY, mouseX, mouseY)
+            page.draw(graphics, x + Sidebar.WIDTH + 1f, bodyY, WIDTH - Sidebar.WIDTH - 1f, Sidebar.HEIGHT, mouseX, mouseY)
+        }
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {

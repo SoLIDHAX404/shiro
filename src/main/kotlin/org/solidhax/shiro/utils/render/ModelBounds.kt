@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.Pose
 import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
 import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.mixin.CustomHeadLayerAccessor
@@ -123,3 +124,8 @@ object ModelBounds {
 
     private const val PIXELS_PER_BLOCK = 16f
 }
+
+val AABB.corners: List<Vec3>
+    get() = buildList(8) {
+        for (x in doubleArrayOf(minX, maxX)) for (y in doubleArrayOf(minY, maxY)) for (z in doubleArrayOf(minZ, maxZ)) add(Vec3(x, y, z))
+    }

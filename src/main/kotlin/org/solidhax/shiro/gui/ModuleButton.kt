@@ -1,17 +1,17 @@
 package org.solidhax.shiro.gui
 
-import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
-import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.resources.Identifier
 import org.solidhax.shiro.features.Module
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.shiroId
 import org.solidhax.shiro.utils.truncate
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.accentEdge
 import org.solidhax.shiro.utils.ui.animation.Animation
 import org.solidhax.shiro.utils.ui.icon
 import org.solidhax.shiro.utils.ui.lerpColor
+import org.solidhax.shiro.utils.ui.outlinedRectangle
 import org.solidhax.shiro.utils.ui.text
 
 class ModuleButton(val module: Module) {
@@ -22,10 +22,9 @@ class ModuleButton(val module: Module) {
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, hovered: Boolean) {
         val hover = hoverAnimation.animate(hovered)
         val toggle = toggleAnimation.animate(module.enabled)
-        val color = lerpColor(theme.textMuted, theme.text, hover)
+        val color = theme.textHover(hover)
 
-        graphics.roundedRectangle(x, y, width, HEIGHT, lerpColor(theme.entryHovered, theme.entrySelected, hover), Radius.LARGE)
-        graphics.hollowRectangle(x, y, width, HEIGHT, 1f, theme.divider, Radius.LARGE)
+        graphics.outlinedRectangle(x, y, width, HEIGHT, lerpColor(theme.entryHovered, theme.entrySelected, hover), theme.divider, Radius.LARGE)
         if (toggle > 0f) graphics.accentEdge(x, y + HEIGHT * (1f - toggle) / 2f, width, HEIGHT * toggle, Radius.LARGE, theme.accent, left = true)
 
         graphics.text(module.name, x + INSET, y + NAME_Y, color, NAME_SIZE)
@@ -45,6 +44,6 @@ class ModuleButton(val module: Module) {
         private const val CHEVRON_AREA = 30f
         private const val TOGGLE_DURATION = 200L
 
-        val CHEVRON: Identifier = Identifier.fromNamespaceAndPath("shiro", "chevron.svg")
+        val CHEVRON: Identifier = shiroId("chevron.svg")
     }
 }

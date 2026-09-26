@@ -1,6 +1,7 @@
 package org.solidhax.shiro.gui
 
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
+import org.solidhax.shiro.utils.ui.lerpColor
 
 data class Theme(
     val panelTint: CascadeGeometricColor,
@@ -25,6 +26,10 @@ data class Theme(
     val divider: Int,
     val shadow: Int
 ) {
+    fun textHover(progress: Float): CascadeGeometricColor = lerpColor(textMuted, text, progress)
+
+    fun controlHover(progress: Float): Int = lerpColor(control, controlHovered, progress)
+
     companion object {
         val DEFAULT = Theme(
             panelTint = CascadeGeometricColor.vertical(0xF02A2B2D.toInt(), 0xF5202123.toInt()),

@@ -1,7 +1,6 @@
 // Adapted from Odin (https://github.com/odtheking/Odin), Copyright (c) 2025, odtheking, BSD 3-Clause License.
 package org.solidhax.shiro.events.core
 
-import org.solidhax.shiro.utils.logError
 
 abstract class CancellableEvent : Event {
     var isCancelled = false
@@ -12,11 +11,7 @@ abstract class CancellableEvent : Event {
     }
 
     override fun postAndCatch(): Boolean {
-        runCatching {
-            EventBus.post(this)
-        }.onFailure {
-            logError(it, this)
-        }
+        super.postAndCatch()
         return isCancelled
     }
 }

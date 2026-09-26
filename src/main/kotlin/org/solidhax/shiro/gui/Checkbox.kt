@@ -4,8 +4,8 @@ import foo.starred.cascade.graphics.extensions.image.image
 import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.resources.Identifier
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.shiroId
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.lerpColor
 import org.solidhax.shiro.utils.ui.svgTexture
@@ -18,7 +18,7 @@ object Checkbox {
     private const val UNCHECKED_ALPHA = 0.35f
     private const val CHECK_MIN_SCALE = 0.75f
 
-    private val CHECK = Identifier.fromNamespaceAndPath("shiro", "check.svg")
+    private val CHECK = shiroId("check.svg")
 
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, hovered: Boolean, progress: Float) {
         graphics.roundedRectangle(x, y, SIZE, SIZE, lerpColor(if (hovered) theme.controlHovered else theme.control, theme.accent, progress), Radius.MEDIUM)

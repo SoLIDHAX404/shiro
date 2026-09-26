@@ -55,6 +55,4 @@ class HudSetting(
             if (setting is Saving) style.get(setting.key)?.let { setting.read(it, gson) }
         }
     }
-
-    private val Setting<*>.key: String get() = parent?.let { "${it.name}.$name" } ?: name
 }

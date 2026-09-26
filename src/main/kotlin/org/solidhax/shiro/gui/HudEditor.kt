@@ -1,10 +1,7 @@
 package org.solidhax.shiro.gui
 
-import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import com.mojang.blaze3d.platform.InputConstants
-import foo.starred.cascade.graphics.extensions.blur.blur
 import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.solid.rectangle
@@ -12,7 +9,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
-import net.minecraft.network.chat.Component
 import org.solidhax.shiro.Shiro
 import org.solidhax.shiro.Shiro.logger
 import org.solidhax.shiro.Shiro.mc
@@ -20,10 +16,14 @@ import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.settings.impl.HudElement
 import org.solidhax.shiro.gui.settings.impl.HudSetting
+import org.solidhax.shiro.utils.readJsonFile
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.TEXT_SIZE
 import org.solidhax.shiro.utils.ui.animation.AnimationManager
 import org.solidhax.shiro.utils.ui.animation.Animations
+import org.solidhax.shiro.utils.ui.centeredText
+import org.solidhax.shiro.utils.ui.fade
+import org.solidhax.shiro.utils.ui.glassPanel
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.lerpColor
 import org.solidhax.shiro.utils.ui.text
@@ -35,11 +35,13 @@ import kotlin.math.min
 import kotlin.math.round
 import kotlin.math.roundToInt
 import kotlin.math.sign
+import org.solidhax.shiro.utils.ui.withAlpha
+import org.solidhax.shiro.utils.writeJsonFile
 
 /**
  * Screen for moving and resizing [HudSetting]s. Opened with /shiro hud or from a HUD setting in the ClickGUI.
  */
-object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
+object HudEditor : OverlayScreen("Shiro HUD Editor") {
 
     // declared first: object properties initialize top to bottom and gridSize reads this
     private val GRID_SIZES = intArrayOf(5, 10, 20)
@@ -103,7 +105,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
 
             val active = setting == dragging || setting == resizing || setting == selected
             val highlight = elementHover[setting].animate(active || setting == hovered)
-            graphics.rectangle(hud.x, hud.y, hud.scaledWidth, hud.scaledHeight, lerpColor(ELEMENT_FILL, theme.accent and 0xFFFFFF or ELEMENT_FILL_ALPHA, highlight))
+            graphics.rectangle(hud.x, hud.y, hud.scaledWidth, hud.scaledHeight, lerpColor(ELEMENT_FILL, withAlpha(theme.accent, ELEMENT_FILL_ALPHA), highlight))
             graphics.hollowRectangle(hud.x, hud.y, hud.scaledWidth, hud.scaledHeight, pixel, lerpColor(theme.divider, theme.accent, highlight), Radius.SMALL)
             if (highlight > 0f) drawHandle(graphics, hud, highlight)
         }
@@ -111,11 +113,11 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
         (dragging ?: resizing ?: hovered)?.let { drawLabel(graphics, it) }
 
         if (elements.isEmpty()) {
-            graphics.text(EMPTY, (width - textWidth(EMPTY)) / 2f, (height - TEXT_SIZE) / 2f, theme.textMuted)
+            graphics.centeredText(EMPTY, width / 2f, (height - TEXT_SIZE) / 2f, theme.textMuted)
         }
 
         drawToolbar(graphics, mx, my)
-        graphics.text(HINT, (width - textWidth(HINT, HINT_SIZE)) / 2f, height - HINT_SIZE - EDGE_MARGIN, theme.textMuted, HINT_SIZE)
+        graphics.centeredText(HINT, width / 2f, height - HINT_SIZE - EDGE_MARGIN, theme.textMuted, HINT_SIZE)
         menu?.draw(graphics, width.toFloat(), height.toFloat(), mx, my)
 
         super.extractRenderState(graphics, mouseX, mouseY, deltaTicks)
@@ -232,10 +234,6 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
         super.removed()
     }
 
-    override fun extractBlurredBackground(graphics: GuiGraphicsExtractor) {}
-    override fun extractMenuBackground(graphics: GuiGraphicsExtractor) {}
-    override fun isPauseScreen(): Boolean = false
-
     // mouse position for keyboard input, which has no coordinates of its own
     private val cursorX get() = (mc.mouseHandler.xpos() * width / mc.window.screenWidth).toFloat()
     private val cursorY get() = (mc.mouseHandler.ypos() * height / mc.window.screenHeight).toFloat()
@@ -302,7 +300,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     }
 
     private fun drawCenterGuides(graphics: GuiGraphicsExtractor) {
-        val guide = theme.accent and 0xFFFFFF or GUIDE_ALPHA
+        val guide = withAlpha(theme.accent, GUIDE_ALPHA)
         graphics.rectangle(width / 2f, 0f, pixel, height.toFloat(), guide)
         graphics.rectangle(0f, height / 2f, width.toFloat(), pixel, guide)
     }
@@ -310,7 +308,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     private fun drawHandle(graphics: GuiGraphicsExtractor, hud: HudElement, alpha: Float) {
         val x = hud.x + hud.scaledWidth - HANDLE_SIZE / 2f
         val y = hud.y + hud.scaledHeight - HANDLE_SIZE / 2f
-        graphics.roundedRectangle(x, y, HANDLE_SIZE, HANDLE_SIZE, lerpColor(theme.accent and 0xFFFFFF, theme.accent, alpha), Radius.SMALL)
+        graphics.roundedRectangle(x, y, HANDLE_SIZE, HANDLE_SIZE, fade(theme.accent, alpha), Radius.SMALL)
     }
 
     private fun drawLabel(graphics: GuiGraphicsExtractor, setting: HudSetting) {
@@ -330,15 +328,14 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     private fun drawToolbar(graphics: GuiGraphicsExtractor, mouseX: Float, mouseY: Float) {
         var x = (width - toolbarWidth) / 2f
         val y = EDGE_MARGIN
-        graphics.blur(x, y, toolbarWidth, TOOLBAR_HEIGHT, theme.panelTint, Radius.LARGE, BLUR_RADIUS)
-        graphics.hollowRectangle(x, y, toolbarWidth, TOOLBAR_HEIGHT, 1f, theme.border, Radius.LARGE)
+        graphics.glassPanel(x, y, toolbarWidth, TOOLBAR_HEIGHT, shadow = false)
 
         x += TOOLBAR_PADDING
         for (button in buttons) {
             button.x = x
             button.y = y + TOOLBAR_PADDING
             val hover = buttonHover[button].animate(button.isHovered(mouseX, mouseY))
-            graphics.roundedRectangle(button.x, button.y, button.width, BUTTON_HEIGHT, lerpColor(theme.control, theme.controlHovered, hover), Radius.MEDIUM)
+            graphics.roundedRectangle(button.x, button.y, button.width, BUTTON_HEIGHT, theme.controlHover(hover), Radius.MEDIUM)
 
             var textX = button.x + BUTTON_PADDING
             val textY = button.y + (BUTTON_HEIGHT - TEXT_SIZE) / 2f
@@ -346,7 +343,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
                 Checkbox.draw(graphics, textX, button.y + (BUTTON_HEIGHT - Checkbox.SIZE) / 2f, hover > 0.5f, if (it()) 1f else 0f)
                 textX += Checkbox.SIZE + CHECKBOX_GAP
             }
-            graphics.text(button.label(), textX, textY, lerpColor(theme.textMuted, theme.text, hover))
+            graphics.text(button.label(), textX, textY, theme.textHover(hover))
             x += button.width + TOOLBAR_PADDING
         }
     }
@@ -359,8 +356,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
 
     private fun loadPrefs() {
         try {
-            if (!prefsFile.exists()) return
-            val json = JsonParser.parseString(prefsFile.readText()).asJsonObject
+            val json = readJsonFile(prefsFile)?.asJsonObject ?: return
             json.get("grid")?.asBoolean?.let { gridEnabled = it }
             json.get("gridSize")?.asInt?.takeIf { it in GRID_SIZES }?.let { gridSize = it }
         } catch (e: Exception) {
@@ -374,8 +370,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
                 addProperty("grid", gridEnabled)
                 addProperty("gridSize", gridSize)
             }
-            prefsFile.parentFile?.mkdirs()
-            prefsFile.writeText(GsonBuilder().setPrettyPrinting().create().toJson(json))
+            writeJsonFile(prefsFile, json)
         } catch (e: Exception) {
             logger.error("Error saving HUD editor preferences", e)
         }
@@ -403,7 +398,6 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     private const val BUTTON_PADDING = 7f
     private const val CHECKBOX_GAP = 5f
     private const val TOOLBAR_HEIGHT = BUTTON_HEIGHT + TOOLBAR_PADDING * 2f
-    private const val BLUR_RADIUS = 30f
 
     private const val LABEL_SIZE = 7f
     private const val LABEL_PADDING = 3f
@@ -413,9 +407,9 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     private const val BACKDROP = 0x66000000
     private const val GRID_MINOR = 0x14FFFFFF
     private const val GRID_MAJOR = 0x2EFFFFFF
-    private const val GUIDE_ALPHA = 0x80000000.toInt()
+    private const val GUIDE_ALPHA = 0x80
     private const val ELEMENT_FILL = 0x0FFFFFFF
-    private const val ELEMENT_FILL_ALPHA = 0x1F000000
+    private const val ELEMENT_FILL_ALPHA = 0x1F
     private const val LABEL_BACKGROUND = 0xE0202123.toInt()
 
     private const val EMPTY = "No HUD elements are enabled. Turn on a module with a HUD to edit it here."

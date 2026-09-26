@@ -5,8 +5,7 @@ import com.mojang.renderpearl.api.pipeline.BlendFunction
 import com.mojang.renderpearl.api.pipeline.ColorTargetState
 import com.mojang.renderpearl.api.pipeline.RenderPipeline
 import net.minecraft.client.renderer.RenderPipelines
-import net.minecraft.resources.Identifier
-import org.solidhax.shiro.Shiro.MOD_ID
+import org.solidhax.shiro.utils.shiroId
 import java.util.Optional
 
 object CustomRenderPipelines {
@@ -14,7 +13,7 @@ object CustomRenderPipelines {
         RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
             .withColorTargetState(ColorTargetState.DEFAULT)
             .withDepthStencilState(Optional.empty())
-            .withLocation(Identifier.fromNamespaceAndPath(MOD_ID, "pipeline/lines_esp"))
+            .withLocation(shiroId("pipeline/lines_esp"))
             .build()
     )
 
@@ -22,14 +21,14 @@ object CustomRenderPipelines {
         RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
             .withColorTargetState(ColorTargetState(BlendFunction.TRANSLUCENT))
             .withDepthStencilState(Optional.empty())
-            .withLocation(Identifier.fromNamespaceAndPath(MOD_ID, "pipeline/lines_translucent_esp"))
+            .withLocation(shiroId("pipeline/lines_translucent_esp"))
             .build()
     )
 
     val QUADS_ESP: RenderPipeline = RenderPipelines.register(
         RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
             .withDepthStencilState(Optional.empty())
-            .withLocation(Identifier.fromNamespaceAndPath(MOD_ID, "pipeline/quads_esp"))
+            .withLocation(shiroId("pipeline/quads_esp"))
             .build()
     )
 }

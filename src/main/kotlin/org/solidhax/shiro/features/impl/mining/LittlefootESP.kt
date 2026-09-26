@@ -1,6 +1,5 @@
 package org.solidhax.shiro.features.impl.mining
 
-import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import net.minecraft.client.player.RemotePlayer
 import org.solidhax.shiro.events.EntityGlowEvent
 import org.solidhax.shiro.events.HudRenderEvent
@@ -8,7 +7,6 @@ import org.solidhax.shiro.events.LevelEvent
 import org.solidhax.shiro.events.TickEvent
 import org.solidhax.shiro.events.core.on
 import org.solidhax.shiro.features.Module
-import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.DummyEntity
 import org.solidhax.shiro.gui.EntityPreview
 import org.solidhax.shiro.gui.PreviewLabel
@@ -16,14 +14,13 @@ import org.solidhax.shiro.gui.settings.impl.BooleanSetting
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
-import org.solidhax.shiro.utils.render.ModelBounds
 import org.solidhax.shiro.utils.skinTexture
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.texturesProfile
 import org.solidhax.shiro.utils.ui.NameTagSegments
-import org.solidhax.shiro.utils.ui.nameTag
-import org.solidhax.shiro.utils.ui.screenBounds
+import org.solidhax.shiro.utils.ui.entityNameTag
+import org.solidhax.shiro.utils.ui.labelSegments
 import kotlin.math.roundToInt
 
 object LittlefootESP : Module(
@@ -61,9 +58,7 @@ object LittlefootESP : Module(
         on<HudRenderEvent> {
             val player = mc.player ?: return@on
             for (entity in littlefoots) {
-                val segments = nameTagSegments(player.distanceTo(entity).roundToInt())
-                if (segments.isEmpty()) continue
-                graphics.nameTag(screenBounds(ModelBounds.of(entity, partialTick)) ?: continue, nameTagPosition.value, segments)
+                graphics.entityNameTag(entity, partialTick, nameTagPosition.value, nameTagSegments(player.distanceTo(entity).roundToInt()))
             }
         }
 
@@ -72,10 +67,8 @@ object LittlefootESP : Module(
         }
     }
 
-    private fun nameTagSegments(distance: Int): NameTagSegments = buildList {
-        if (showName) add("Littlefoot" to CascadeGeometricColor(highlightColor))
-        if (showDistance) add((if (isEmpty()) "" else " ") + "${distance}m" to theme.textMuted)
-    }
+    private fun nameTagSegments(distance: Int): NameTagSegments =
+        labelSegments(title = "Littlefoot".takeIf { showName }, titleColor = highlightColor, distance = distance.takeIf { showDistance })
 
     private val LITTLEFOOT_TEXTURES = setOf(
         "f2b33640bfb71557e0e1d852287263ceafc9bec205301acf046b7c29fe8cb37b",

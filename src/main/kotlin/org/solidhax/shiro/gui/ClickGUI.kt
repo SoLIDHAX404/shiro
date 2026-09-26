@@ -1,18 +1,16 @@
 package org.solidhax.shiro.gui
 
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
-import net.minecraft.network.chat.Component
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.utils.ui.animation.Animation
 import org.solidhax.shiro.utils.ui.animation.AnimationManager
 import kotlin.math.floor
 
-object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
+object ClickGUI : OverlayScreen("Shiro Click GUI") {
 
     var theme = Theme.DEFAULT
 
@@ -86,10 +84,6 @@ object ClickGUI : Screen(Component.literal("Shiro Click GUI")) {
         ModuleManager.saveConfigurations()
         super.removed()
     }
-
-    override fun extractBlurredBackground(graphics: GuiGraphicsExtractor) {}
-    override fun extractMenuBackground(graphics: GuiGraphicsExtractor) {}
-    override fun isPauseScreen(): Boolean = false
 
     private const val OPEN_DURATION = 320L
     private const val CLOSE_THRESHOLD = 0.001f

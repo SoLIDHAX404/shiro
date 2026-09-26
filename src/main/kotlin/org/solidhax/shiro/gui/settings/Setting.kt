@@ -26,6 +26,8 @@ abstract class Setting<T>(
     var parent: DropdownSetting? = null
         private set
 
+    val key: String get() = parent?.let { "${it.name}.$name" } ?: name
+
     open fun reset() {
         value = default
     }

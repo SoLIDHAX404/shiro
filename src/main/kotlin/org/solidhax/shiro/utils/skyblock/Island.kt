@@ -27,5 +27,5 @@ enum class Island(val displayName: String) {
     LotusAtoll("Lotus Atoll"),
     TorrhusCanyon("Torrhus Canyon"),
     Safari("Safari"),
-    Unknown("(Unknown)");
+    Unknown("(Unknown)")
 }

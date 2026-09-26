@@ -36,6 +36,7 @@ import org.joml.Vector3f
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.utils.render.ModelBounds
+import org.solidhax.shiro.utils.render.corners
 import org.solidhax.shiro.utils.ui.Bounds
 import org.solidhax.shiro.utils.ui.LabelPosition
 import org.solidhax.shiro.utils.ui.NameTagSegments
@@ -155,12 +156,10 @@ class EntityPreview(
     private fun projectBounds(box: AABB, center: Vector3f, rotation: Quaternionf, blockSize: Float): Bounds {
         val centerX = x + width / 2f
         val centerY = y + height / 2f
-        val corners = ArrayList<Vector2f>(8)
-        for (cornerX in doubleArrayOf(box.minX, box.maxX)) for (cornerY in doubleArrayOf(box.minY, box.maxY)) for (cornerZ in doubleArrayOf(box.minZ, box.maxZ)) {
-            val offset = rotation.transform(Vector3f(cornerX.toFloat(), cornerY.toFloat(), cornerZ.toFloat()).sub(center))
-            corners += Vector2f(centerX + offset.x * blockSize, centerY + offset.y * blockSize)
-        }
-        return Bounds.of(corners)
+        return Bounds.of(box.corners.map { corner ->
+            val offset = rotation.transform(corner.toVector3f().sub(center))
+            Vector2f(centerX + offset.x * blockSize, centerY + offset.y * blockSize)
+        })
     }
 
     private fun drawLabel(graphics: GuiGraphicsExtractor) {

@@ -50,7 +50,7 @@ abstract class Module(
     }
 
     fun <K : Setting<*>> registerSetting(setting: K): K {
-        settings[setting.parent?.let { "${it.name}.${setting.name}" } ?: setting.name] = setting
+        settings[setting.key] = setting
         return setting
     }
 

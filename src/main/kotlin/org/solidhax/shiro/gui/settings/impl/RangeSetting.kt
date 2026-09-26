@@ -6,7 +6,6 @@ import com.google.gson.JsonElement
 import org.solidhax.shiro.gui.settings.Saving
 import org.solidhax.shiro.gui.settings.Setting
 import kotlin.math.abs
-import kotlin.math.round
 
 class RangeSetting(
     name: String,
@@ -18,14 +17,12 @@ class RangeSetting(
     private val unit: String = ""
 ) : Setting<ClosedFloatingPointRange<Double>>(name, desc), Saving {
 
-    val incrementDouble = increment.toDouble()
-    val minDouble = min.toDouble()
-    val maxDouble = max.toDouble()
+    private val bounds = NumberBounds(min, max, increment)
 
     override var value: ClosedFloatingPointRange<Double> = default
         set(value) {
-            val start = snap(value.start)
-            val end = snap(value.endInclusive)
+            val start = bounds.snap(value.start)
+            val end = bounds.snap(value.endInclusive)
             field = minOf(start, end)..maxOf(start, end)
         }
 
@@ -45,8 +42,8 @@ class RangeSetting(
             value = lower..upper.coerceAtLeast(lower)
         }
 
-    val lowerPercentage: Float get() = percentageOf(lower)
-    val upperPercentage: Float get() = percentageOf(upper)
+    val lowerPercentage: Float get() = bounds.percentageOf(lower)
+    val upperPercentage: Float get() = bounds.percentageOf(upper)
 
     val display: String
         get() = "${formatNumber(lower, unit)} - ${formatNumber(upper, unit)}"
@@ -56,11 +53,11 @@ class RangeSetting(
                 (lowerPercentage == upperPercentage && percentage > upperPercentage)
 
     fun setLowerFromPercentage(percentage: Float) {
-        lower = valueAt(percentage)
+        lower = bounds.valueAt(percentage)
     }
 
     fun setUpperFromPercentage(percentage: Float) {
-        upper = valueAt(percentage)
+        upper = bounds.valueAt(percentage)
     }
 
     override fun write(gson: Gson): JsonElement = JsonArray().apply {
@@ -73,13 +70,4 @@ class RangeSetting(
         if (array.size() != 2) return
         value = array[0].asDouble..array[1].asDouble
     }
-
-    private fun valueAt(percentage: Float): Double =
-        minDouble + percentage.coerceIn(0f, 1f) * (maxDouble - minDouble)
-
-    private fun percentageOf(value: Double): Float =
-        ((value - minDouble) / (maxDouble - minDouble)).toFloat()
-
-    private fun snap(value: Double): Double =
-        (round(value / incrementDouble) * incrementDouble).coerceIn(minDouble, maxDouble)
 }

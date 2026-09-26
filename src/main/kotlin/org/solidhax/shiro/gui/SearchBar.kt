@@ -1,18 +1,17 @@
 package org.solidhax.shiro.gui
 
-import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
-import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
-import net.minecraft.resources.Identifier
 import org.solidhax.shiro.features.Category
 import org.solidhax.shiro.features.Module
 import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.shiroId
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.icon
 import org.solidhax.shiro.utils.ui.isAreaHovered
+import org.solidhax.shiro.utils.ui.outlinedRectangle
 
 class SearchBar(private val onSearch: () -> Unit) {
 
@@ -32,8 +31,7 @@ class SearchBar(private val onSearch: () -> Unit) {
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float) {
         this.x = x
         this.y = y
-        graphics.roundedRectangle(x, y, WIDTH, HEIGHT, theme.card, Radius.LARGE)
-        graphics.hollowRectangle(x, y, WIDTH, HEIGHT, 1f, theme.divider, Radius.LARGE)
+        graphics.outlinedRectangle(x, y, WIDTH, HEIGHT, theme.card, theme.divider, Radius.LARGE)
         graphics.icon(ICON, x + INSET, y + (HEIGHT - ICON_SIZE) / 2f, ICON_SIZE, theme.textMuted)
         input.draw(graphics, x + TEXT_X, y, WIDTH - TEXT_X - INSET, HEIGHT, PLACEHOLDER)
     }
@@ -85,6 +83,6 @@ class SearchBar(private val onSearch: () -> Unit) {
         private const val ICON_SIZE = 9f
         private const val TEXT_X = INSET + ICON_SIZE + 5f
 
-        private val ICON = Identifier.fromNamespaceAndPath("shiro", "search.svg")
+        private val ICON = shiroId("search.svg")
     }
 }

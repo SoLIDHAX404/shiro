@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
-import net.minecraft.resources.Identifier
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.solidhax.shiro.commands.mainCommand
@@ -23,6 +22,7 @@ import org.solidhax.shiro.features.impl.misc.AspectRatio
 import org.solidhax.shiro.features.impl.misc.TestModule
 import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.RenderBatchManager
+import org.solidhax.shiro.utils.shiroId
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import java.io.File
 
@@ -51,7 +51,7 @@ object Shiro : ClientModInitializer {
 
         PictureInPictureRendererRegistry.register { ItemRenderer() }
 
-        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath(MOD_ID, "hud"), ModuleManager::renderHud)
+        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, shiroId("hud"), ModuleManager::renderHud)
 
         ClientLifecycleEvents.CLIENT_STOPPING.register { ModuleManager.saveConfigurations() }
 

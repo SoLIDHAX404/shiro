@@ -1,8 +1,6 @@
 package org.solidhax.shiro.gui
 
 import foo.starred.cascade.graphics.extensions.image.image
-import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
-import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import foo.starred.cascade.graphics.states.impl.image.data.CascadeImageFilter
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import org.solidhax.shiro.cosmetics.Cape
@@ -10,10 +8,10 @@ import org.solidhax.shiro.cosmetics.CapeSetting
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.animation.Animations
+import org.solidhax.shiro.utils.ui.centeredText
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.lerpColor
-import org.solidhax.shiro.utils.ui.text
-import org.solidhax.shiro.utils.ui.textWidth
+import org.solidhax.shiro.utils.ui.outlinedRectangle
 
 class CapeSelector(private val setting: CapeSetting) {
 
@@ -34,13 +32,11 @@ class CapeSelector(private val setting: CapeSetting) {
             val selected = setting.value == cape
             val hover = hoverAnimations[cape].animate(!selected && isAreaHovered(mouseX, mouseY, swatchX, y, swatchWidth, HEIGHT))
 
-            graphics.roundedRectangle(swatchX, y, swatchWidth, HEIGHT, lerpColor(theme.control, theme.controlHovered, hover), Radius.LARGE)
-            graphics.hollowRectangle(swatchX, y, swatchWidth, HEIGHT, 1f, lerpColor(theme.divider, theme.accent, selectAnimations[cape].animate(selected)), Radius.LARGE)
+            graphics.outlinedRectangle(swatchX, y, swatchWidth, HEIGHT, theme.controlHover(hover), lerpColor(theme.divider, theme.accent, selectAnimations[cape].animate(selected)), Radius.LARGE)
 
             val texture = cape.texture
             if (texture == null) {
-                val label = cape.displayName
-                graphics.text(label, swatchX + (swatchWidth - textWidth(label, TEXT_SIZE)) / 2f, y + (HEIGHT - TEXT_SIZE) / 2f, if (selected) theme.text else theme.textMuted, TEXT_SIZE)
+                graphics.centeredText(cape.displayName, swatchX + swatchWidth / 2f, y + (HEIGHT - TEXT_SIZE) / 2f, if (selected) theme.text else theme.textMuted, TEXT_SIZE)
             } else {
                 graphics.image(
                     texture, swatchX + (swatchWidth - IMAGE_WIDTH) / 2f, y + INSET, IMAGE_WIDTH, IMAGE_HEIGHT,

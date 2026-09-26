@@ -1,15 +1,15 @@
 package org.solidhax.shiro.config
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import org.solidhax.shiro.Shiro
 import org.solidhax.shiro.Shiro.logger
 import org.solidhax.shiro.features.Module
 import org.solidhax.shiro.gui.settings.Saving
+import org.solidhax.shiro.utils.prettyGson
+import org.solidhax.shiro.utils.readJsonFile
+import org.solidhax.shiro.utils.writeJsonFile
 import java.io.File
 
 /**
@@ -24,11 +24,9 @@ class ModuleConfig(private val file: File) {
 
     fun load() {
         try {
-            if (!file.exists()) return
-            val text = file.readText()
-            if (text.isBlank()) return
+            val json = readJsonFile(file) ?: return
 
-            for (element in JsonParser.parseString(text).asJsonArray) {
+            for (element in json.asJsonArray) {
                 val moduleObj = element?.takeIf { it.isJsonObject }?.asJsonObject ?: continue
                 val module = modules[moduleObj.get("name")?.asString?.lowercase() ?: continue] ?: continue
 
@@ -38,7 +36,7 @@ class ModuleConfig(private val file: File) {
                 for ((key, value) in settingsObj.entrySet()) {
                     val setting = module.settings[key] as? Saving ?: continue
                     try {
-                        setting.read(value, gson)
+                        setting.read(value, prettyGson)
                     } catch (e: Exception) {
                         logger.warn("Failed to load setting '$key' of module '${module.name}'", e)
                     }
@@ -58,22 +56,17 @@ class ModuleConfig(private val file: File) {
                         add("enabled", JsonPrimitive(module.enabled))
                         add("settings", JsonObject().apply {
                             for ((name, setting) in module.settings) {
-                                if (setting is Saving) add(name, setting.write(gson))
+                                if (setting is Saving) add(name, setting.write(prettyGson))
                             }
                         })
                     })
                 }
             }
-            file.parentFile?.mkdirs()
-            file.writeText(gson.toJson(jsonArray))
+            writeJsonFile(file, jsonArray)
         } catch (e: Exception) {
             logger.error("Error saving module config to $file", e)
         }
     }
 
     override fun toString(): String = "ModuleConfig(file=$file)"
-
-    private companion object {
-        private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
-    }
 }

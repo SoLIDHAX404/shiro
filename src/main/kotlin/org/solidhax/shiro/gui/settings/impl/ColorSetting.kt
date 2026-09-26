@@ -25,7 +25,7 @@ class ColorSetting(
     var expanded = false
 
     override var value: Int
-        get() = OPAQUE or (Color.HSBtoRGB(hue, saturation, brightness) and RGB_MASK)
+        get() = Color.HSBtoRGB(hue, saturation, brightness)
         set(value) {
             val components = Color.RGBtoHSB((value shr 16) and 0xFF, (value shr 8) and 0xFF, value and 0xFF, null)
             hue = components[0]
@@ -46,16 +46,11 @@ class ColorSetting(
         this.brightness = brightness.coerceIn(0f, 1f)
     }
 
-    val hueColor: Int get() = OPAQUE or (Color.HSBtoRGB(hue, 1f, 1f) and RGB_MASK)
+    val hueColor: Int get() = Color.HSBtoRGB(hue, 1f, 1f)
 
     override fun write(gson: Gson): JsonElement = JsonPrimitive(value)
 
     override fun read(element: JsonElement, gson: Gson) {
         value = element.asInt
-    }
-
-    companion object {
-        private const val OPAQUE = 0xFF000000.toInt()
-        private const val RGB_MASK = 0xFFFFFF
     }
 }

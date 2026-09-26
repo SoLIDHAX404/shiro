@@ -1,14 +1,10 @@
 package org.solidhax.shiro.gui
 
-import foo.starred.cascade.graphics.extensions.blur.blur
-import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
-import foo.starred.cascade.graphics.extensions.shadow.dropShadow
-import foo.starred.cascade.graphics.geometry.CascadeGeometricOffset
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.Page.Companion.PADDING
 import org.solidhax.shiro.gui.settings.Setting
-import org.solidhax.shiro.utils.ui.Radius
+import org.solidhax.shiro.utils.ui.glassPanel
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.text
 
@@ -25,11 +21,10 @@ class ContextMenu(private val anchorX: Float, private val anchorY: Float, privat
         x = anchorX.coerceAtMost(screenWidth - WIDTH - EDGE_MARGIN).coerceAtLeast(EDGE_MARGIN)
         y = anchorY.coerceAtMost(screenHeight - height - EDGE_MARGIN).coerceAtLeast(EDGE_MARGIN)
 
-        graphics.dropShadow(x, y, WIDTH, height, CascadeGeometricOffset(0f, 2f), 10f, 0f, theme.shadow, Radius.LARGE)
-        graphics.blur(x, y, WIDTH, height, theme.panelTint, Radius.LARGE, BLUR_RADIUS)
-        graphics.text(title, x + PADDING, y + (HEADER_HEIGHT - TITLE_SIZE) / 2f, theme.text, TITLE_SIZE)
-        list.draw(graphics, x, y, WIDTH, height, mouseX, mouseY)
-        graphics.hollowRectangle(x, y, WIDTH, height, 1f, theme.border, Radius.LARGE)
+        graphics.glassPanel(x, y, WIDTH, height) {
+            graphics.text(title, x + PADDING, y + (HEADER_HEIGHT - TITLE_SIZE) / 2f, theme.text, TITLE_SIZE)
+            list.draw(graphics, x, y, WIDTH, height, mouseX, mouseY)
+        }
     }
 
     fun isHovered(mouseX: Float, mouseY: Float): Boolean = isAreaHovered(mouseX, mouseY, x, y, WIDTH, height)
@@ -56,6 +51,5 @@ class ContextMenu(private val anchorX: Float, private val anchorY: Float, privat
         private const val HEADER_HEIGHT = 26f
         private const val TITLE_SIZE = 9f
         private const val EDGE_MARGIN = 4f
-        private const val BLUR_RADIUS = 30f
     }
 }

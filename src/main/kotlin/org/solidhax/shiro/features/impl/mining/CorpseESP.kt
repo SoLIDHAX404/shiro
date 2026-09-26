@@ -1,13 +1,11 @@
 package org.solidhax.shiro.features.impl.mining
 
 import com.mojang.authlib.GameProfile
-import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import net.minecraft.client.player.RemotePlayer
 import net.minecraft.client.resources.DefaultPlayerSkin
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.decoration.ArmorStand
-import net.minecraft.world.item.DyeColor
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -31,14 +29,13 @@ import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
 import org.solidhax.shiro.utils.createSkullStack
 import org.solidhax.shiro.utils.render.ItemRenderer
-import org.solidhax.shiro.utils.render.ModelBounds
 import org.solidhax.shiro.utils.render.itemStack
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.ui.NameTagSegments
 import org.solidhax.shiro.utils.ui.TEXT_SIZE
-import org.solidhax.shiro.utils.ui.nameTag
-import org.solidhax.shiro.utils.ui.screenBounds
+import org.solidhax.shiro.utils.ui.entityNameTag
+import org.solidhax.shiro.utils.ui.labelSegments
 import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
 import java.util.UUID
@@ -104,9 +101,7 @@ object CorpseESP : Module(
         on<HudRenderEvent> {
             val player = mc.player ?: return@on
             for ((entity, type) in corpses) {
-                val segments = nameTagSegments(type, player.distanceTo(entity).roundToInt())
-                if (segments.isEmpty()) continue
-                graphics.nameTag(screenBounds(ModelBounds.of(entity, partialTick)) ?: continue, nameTagPosition.value, segments)
+                graphics.entityNameTag(entity, partialTick, nameTagPosition.value, nameTagSegments(type, player.distanceTo(entity).roundToInt()))
             }
         }
 
@@ -140,10 +135,11 @@ object CorpseESP : Module(
 
     private fun nameTagSegments(type: CorpseType, distance: Int): NameTagSegments {
         val settings = type.settings
-        return buildList {
-            if (settings.showType.value) add("${type.displayName} Corpse" to CascadeGeometricColor(settings.color.value))
-            if (settings.showDistance.value) add((if (isEmpty()) "" else " ") + "${distance}m" to theme.textMuted)
-        }
+        return labelSegments(
+            title = "${type.displayName} Corpse".takeIf { settings.showType.value },
+            titleColor = settings.color.value,
+            distance = distance.takeIf { settings.showDistance.value },
+        )
     }
 
     private fun corpsePreview(type: CorpseType) = EntityPreview(previewCorpse, type.displayName, PreviewLabel(nameTagPosition) { nameTagSegments(type, PREVIEW_DISTANCE) }) {

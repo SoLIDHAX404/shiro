@@ -3,32 +3,22 @@ package org.solidhax.shiro.events.core
 
 import net.minecraft.network.protocol.Packet
 import net.minecraft.util.profiling.Profiler
-import org.solidhax.shiro.events.PacketEvent
 import net.minecraft.util.profiling.ProfilerFiller
+import org.solidhax.shiro.events.PacketEvent
 
 object EventBus {
 
-    @JvmField
-    internal val listenerArrays = mutableMapOf<Class<out Event>, Array<ListenerEntry<out Event>>>()
-    @JvmField
-    internal val activeSubscribers = mutableSetOf<Any>()
-    @JvmField
-    internal val subscriberClasses = mutableMapOf<Any, Class<*>>()
-    @JvmField
-    internal val invokers = HashMap<Class<out Event>, Invoker>()
-
+    private val listenerArrays = HashMap<Class<out Event>, Array<ListenerEntry<out Event>>>()
+    private val subscriberClasses = HashMap<Any, Class<*>>()
+    private val invokers = HashMap<Class<out Event>, Invoker>()
     private val profilerNameCache = HashMap<Class<out Event>, String>()
 
     fun subscribe(subscriber: Any) {
-        if (activeSubscribers.add(subscriber)) {
-            subscriberClasses[subscriber] = subscriber.javaClass
-            rebuildAffectedCaches(subscriber.javaClass)
-        }
+        if (subscriberClasses.putIfAbsent(subscriber, subscriber.javaClass) == null) rebuildAffectedCaches(subscriber.javaClass)
     }
 
     fun unsubscribe(subscriber: Any) {
-        if (activeSubscribers.remove(subscriber))
-            subscriberClasses.remove(subscriber)?.let { rebuildAffectedCaches(it) }
+        subscriberClasses.remove(subscriber)?.let { rebuildAffectedCaches(it) }
     }
 
     @JvmStatic
@@ -37,8 +27,7 @@ object EventBus {
         val invoker = invokers[eventClass] ?: return
 
         val profiler = Profiler.get()
-        val profilerName = profilerNameCache.getOrPut(eventClass) { "Shiro: ${eventClass.simpleName}" }
-        profiler.push(profilerName)
+        profiler.push(profilerNameCache.getOrPut(eventClass) { "Shiro: ${eventClass.simpleName}" })
         try {
             invoker.invoke(event, profiler)
         } finally {
@@ -56,10 +45,9 @@ object EventBus {
         val name = subscriberClass.simpleName.ifEmpty { subscriberClass.name }
         val entry = ListenerEntry(subscriberClass, EventListener(priority, ignoreCancelled, name, handler))
 
-        val existing = listenerArrays[eventClass] ?: emptyArray()
-        val newArray = (existing + entry).sortedByDescending { it.listener.priority }.toTypedArray()
-        listenerArrays[eventClass] = newArray
-        rebuildInvoker(eventClass, newArray)
+        val listeners = ((listenerArrays[eventClass] ?: emptyArray()) + entry).sortedByDescending { it.listener.priority }.toTypedArray()
+        listenerArrays[eventClass] = listeners
+        rebuildInvoker(eventClass, listeners)
     }
 
     private fun rebuildAffectedCaches(changedClass: Class<*>) {
@@ -68,15 +56,7 @@ object EventBus {
         }
     }
 
-    private fun rebuildInvoker(
-        eventClass: Class<out Event>,
-        allListeners: Array<ListenerEntry<*>>
-    ) {
-        if (activeSubscribers.isEmpty()) {
-            invokers[eventClass] = EmptyInvoker
-            return
-        }
-
+    private fun rebuildInvoker(eventClass: Class<out Event>, allListeners: Array<ListenerEntry<*>>) {
         val activeClasses = subscriberClasses.values
 
         @Suppress("UNCHECKED_CAST")
@@ -85,10 +65,7 @@ object EventBus {
             .map { it.listener as EventListener<Event> }
             .toTypedArray()
 
-        invokers[eventClass] = when {
-            activeListeners.isEmpty() -> EmptyInvoker
-            else -> InvokerFactory.build(activeListeners)
-        }
+        invokers[eventClass] = if (activeListeners.isEmpty()) EmptyInvoker else ListenerInvoker(activeListeners)
     }
 
     data class ListenerEntry<T : Event>(
@@ -98,16 +75,12 @@ object EventBus {
 
     class EventListener<T : Event>(
         val priority: Int,
-        ignoreCancelled: Boolean,
+        private val ignoreCancelled: Boolean,
         val subscriberName: String,
         val handler: (T) -> Unit
     ) {
-        @JvmField
-        val checkCancelled = ignoreCancelled
-
         fun invoke(event: T) {
-            if (!checkCancelled || event !is CancellableEvent || !event.isCancelled)
-                handler(event)
+            if (!ignoreCancelled || event !is CancellableEvent || !event.isCancelled) handler(event)
         }
     }
 
@@ -119,18 +92,14 @@ object EventBus {
         override fun invoke(event: Event, profiler: ProfilerFiller) {}
     }
 
-    private object InvokerFactory {
-        fun build(listeners: Array<EventListener<Event>>): Invoker {
-            return object : Invoker {
-                override fun invoke(event: Event, profiler: ProfilerFiller) {
-                    for (listener in listeners) {
-                        profiler.push(listener.subscriberName)
-                        try {
-                            listener.invoke(event)
-                        } finally {
-                            profiler.pop()
-                        }
-                    }
+    private class ListenerInvoker(private val listeners: Array<EventListener<Event>>) : Invoker {
+        override fun invoke(event: Event, profiler: ProfilerFiller) {
+            for (listener in listeners) {
+                profiler.push(listener.subscriberName)
+                try {
+                    listener.invoke(event)
+                } finally {
+                    profiler.pop()
                 }
             }
         }

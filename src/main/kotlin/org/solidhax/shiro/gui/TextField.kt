@@ -1,13 +1,12 @@
 package org.solidhax.shiro.gui
 
-import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
-import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.isAreaHovered
+import org.solidhax.shiro.utils.ui.outlinedRectangle
 
 class TextField(getText: () -> String, setText: (String) -> Unit) {
 
@@ -23,8 +22,7 @@ class TextField(getText: () -> String, setText: (String) -> Unit) {
         this.width = width
 
         val active = input.focused || isHovered(mouseX, mouseY)
-        graphics.roundedRectangle(x, y, width, HEIGHT, if (active) theme.controlHovered else theme.control, Radius.MEDIUM)
-        graphics.hollowRectangle(x, y, width, HEIGHT, 1f, if (input.focused) theme.accent else theme.divider, Radius.MEDIUM)
+        graphics.outlinedRectangle(x, y, width, HEIGHT, if (active) theme.controlHovered else theme.control, if (input.focused) theme.accent else theme.divider, Radius.MEDIUM)
         input.draw(graphics, x + PADDING, y, width - PADDING * 2f, HEIGHT)
     }
 

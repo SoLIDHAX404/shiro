@@ -7,10 +7,12 @@ import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.settings.Setting
 import org.solidhax.shiro.gui.settings.Setting.Companion.withDependency
+import org.solidhax.shiro.utils.ui.BLACK
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
+import org.solidhax.shiro.utils.ui.withAlpha
 
 /**
  * A movable, scalable element drawn on the in-game HUD. Positions are in GUI-scaled coordinates.
@@ -43,8 +45,8 @@ class HudElement(
     val titlePadding = NumberSetting("Padding", 3f, 0, 12, 1, desc = "Space between the title and the content below it.", unit = "px").withDependency(titleDropdown)
 
     private val backgroundDropdown = DropdownSetting("Background")
-    val backgroundType = SelectorSetting("Type", BACKGROUND_NONE, listOf(BACKGROUND_NONE, BACKGROUND_ROUNDED, BACKGROUND_SQUARE), desc = "Shape drawn behind the element.").withDependency(backgroundDropdown)
-    val backgroundColor = ColorSetting("Color", 0xFF000000.toInt(), desc = "Color of the background.").withDependency(backgroundDropdown)
+    val backgroundType = SelectorSetting("Type", "None", listOf("None", "Rounded", "Square"), desc = "Shape drawn behind the element.").withDependency(backgroundDropdown)
+    val backgroundColor = ColorSetting("Color", BLACK, desc = "Color of the background.").withDependency(backgroundDropdown)
     val backgroundOpacity = NumberSetting("Opacity", 50, 0, 100, 5, desc = "How see-through the background is.", unit = "%").withDependency(backgroundDropdown)
     val backgroundPadding = NumberSetting("Padding", 4f, 0, 12, 1, desc = "Space between the edge of the background and the content.", unit = "px").withDependency(backgroundDropdown)
 
@@ -66,7 +68,7 @@ class HudElement(
         val drawY = y.coerceIn(0f, (mc.window.guiScaledHeight - scaledHeight).coerceAtLeast(0f))
 
         val showTitle = drawTitle.enabled
-        val padding = if (backgroundType.selected != BACKGROUND_NONE) backgroundPadding.value else 0f
+        val padding = if (backgroundType.value != BACKGROUND_NONE) backgroundPadding.value else 0f
         val titleHeight = if (showTitle) TITLE_SIZE + titlePadding.value else 0f
         val visible = width > 0f && height > 0f
 
@@ -92,8 +94,8 @@ class HudElement(
     }
 
     private fun drawFrame(graphics: GuiGraphicsExtractor, padding: Float, showTitle: Boolean) {
-        val color = (backgroundOpacity.value * 255 / 100) shl 24 or (backgroundColor.value and 0xFFFFFF)
-        when (backgroundType.selected) {
+        val color = withAlpha(backgroundColor.value, backgroundOpacity.value * 255 / 100)
+        when (backgroundType.value) {
             BACKGROUND_ROUNDED -> graphics.roundedRectangle(0f, 0f, width, height, color, Radius.MEDIUM)
             BACKGROUND_SQUARE -> graphics.rectangle(0f, 0f, width, height, color)
         }
@@ -123,8 +125,8 @@ class HudElement(
         const val MAX_SCALE = 5f
 
         private const val TITLE_SIZE = 8f
-        private const val BACKGROUND_NONE = "None"
-        private const val BACKGROUND_ROUNDED = "Rounded"
-        private const val BACKGROUND_SQUARE = "Square"
+        private const val BACKGROUND_NONE = 0
+        private const val BACKGROUND_ROUNDED = 1
+        private const val BACKGROUND_SQUARE = 2
     }
 }

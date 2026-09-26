@@ -6,6 +6,7 @@ import com.google.gson.JsonPrimitive
 import net.minecraft.resources.Identifier
 import org.solidhax.shiro.gui.settings.Saving
 import org.solidhax.shiro.gui.settings.Setting
+import org.solidhax.shiro.utils.shiroId
 
 enum class Cape(val displayName: String, file: String?) {
     NONE("None", null),
@@ -13,7 +14,7 @@ enum class Cape(val displayName: String, file: String?) {
     MINECON15("Minecon 2015", "minecon15"),
     MINECON16("Minecon 2016", "minecon16");
 
-    val texture: Identifier? = file?.let { Identifier.fromNamespaceAndPath("shiro", "textures/cape/$it.png") }
+    val texture: Identifier? = file?.let { shiroId("textures/cape/$it.png") }
 }
 
 class CapeSetting(name: String, desc: String = "") : Setting<Cape>(name, desc), Saving {

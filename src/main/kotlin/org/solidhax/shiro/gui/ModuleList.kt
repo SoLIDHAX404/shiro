@@ -8,9 +8,8 @@ import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.Page.Companion.SPACING
 import org.solidhax.shiro.utils.ui.TEXT_SIZE
+import org.solidhax.shiro.utils.ui.centeredText
 import org.solidhax.shiro.utils.ui.isAreaHovered
-import org.solidhax.shiro.utils.ui.text
-import org.solidhax.shiro.utils.ui.textWidth
 
 class ModuleList(private val category: () -> Category, private val search: SearchBar, private val onOpenSettings: (Module) -> Unit) : Page {
 
@@ -32,7 +31,7 @@ class ModuleList(private val category: () -> Category, private val search: Searc
         val buttons = currentButtons
         if (buttons.isEmpty()) {
             val empty = if (search.searching) NO_RESULTS else EMPTY
-            graphics.text(empty, x + (width - textWidth(empty)) / 2f, y + (height - TEXT_SIZE) / 2f, theme.textMuted)
+            graphics.centeredText(empty, x + width / 2f, y + (height - TEXT_SIZE) / 2f, theme.textMuted)
             return
         }
 
