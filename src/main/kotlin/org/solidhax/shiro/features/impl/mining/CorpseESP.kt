@@ -23,6 +23,7 @@ import org.solidhax.shiro.gui.DummyEntity
 import org.solidhax.shiro.gui.EntityPreview
 import org.solidhax.shiro.gui.PreviewLabel
 import org.solidhax.shiro.gui.settings.Setting.Companion.withDependency
+import org.solidhax.shiro.gui.settings.impl.ActionSetting
 import org.solidhax.shiro.gui.settings.impl.BooleanSetting
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.DropdownSetting
@@ -55,13 +56,15 @@ object CorpseESP : Module(
 
     private val preview = +PreviewSetting("Preview", *CorpseType.entries.map(::corpsePreview).toTypedArray())
 
-    private val breakdownHud by HUD("Corpse Breakdown", "Shows a breakdown of the corpses in the mineshaft.") { example ->
+    private val breakdownHud by HUD("Corpse Breakdown", "Shows how many unique corpses of each type you find per hour.") { example ->
+        if (!example && sessionStart == 0L) return@HUD 0f to 0f
+
         var width = 0f
-        EXAMPLE_BREAKDOWN.entries.forEachIndexed { index, (type, perHour) ->
+        BREAKDOWN_ORDER.forEachIndexed { index, type ->
             val rowY = index * (ItemRenderer.ITEM_SIZE + BREAKDOWN_ROW_GAP)
             val textY = rowY + (ItemRenderer.ITEM_SIZE - TEXT_SIZE) / 2f
             val label = "${type.displayName}: "
-            val rate = "${if (example) perHour else "-"}/h"
+            val rate = "${if (example) EXAMPLE_RATES.getValue(type) else perHour(type)}/h"
             val textX = ItemRenderer.ITEM_SIZE + BREAKDOWN_ICON_GAP
 
             itemStack(type.icon, 0f, rowY)
@@ -69,19 +72,27 @@ object CorpseESP : Module(
             text(rate, textX + textWidth(label), textY, theme.textMuted)
             width = maxOf(width, textX + textWidth(label) + textWidth(rate))
         }
-        width to EXAMPLE_BREAKDOWN.size * (ItemRenderer.ITEM_SIZE + BREAKDOWN_ROW_GAP) - BREAKDOWN_ROW_GAP
+        width to BREAKDOWN_ORDER.size * (ItemRenderer.ITEM_SIZE + BREAKDOWN_ROW_GAP) - BREAKDOWN_ROW_GAP
     }
 
+    private val resetBreakdownAction = +ActionSetting("Reset Breakdown", desc = "Clears the corpse breakdown and restarts its timer.") { resetBreakdown() }
+
     private val corpses = HashMap<ArmorStand, CorpseType>()
+    private val countedCorpses = HashSet<UUID>()
+    private val corpseCounts = HashMap<CorpseType, Int>()
+    private var sessionStart = 0L
 
     init {
         on<TickEvent.End> {
             corpses.clear()
             if (!LocationUtils.isCurrentArea(Island.Mineshaft)) return@on
+            if (sessionStart == 0L) sessionStart = System.currentTimeMillis()
 
             for (entity in level.entitiesForRendering()) {
                 if (entity !is ArmorStand || !entity.isAlive || entity.isInvisible || entity.name.string != "Armor Stand") continue
-                corpses[entity] = CorpseType.fromHelmet(entity.getItemBySlot(EquipmentSlot.HEAD).customName?.string) ?: continue
+                val type = CorpseType.fromHelmet(entity.getItemBySlot(EquipmentSlot.HEAD).customName?.string) ?: continue
+                corpses[entity] = type
+                if (countedCorpses.add(entity.uuid)) corpseCounts.merge(type, 1, Int::plus)
             }
         }
 
@@ -105,6 +116,16 @@ object CorpseESP : Module(
     }
 
     private val CorpseType.settings: CorpseSettings get() = corpseSettings.getValue(this)
+
+    private fun perHour(type: CorpseType): Int {
+        val hours = (System.currentTimeMillis() - sessionStart) / MILLIS_PER_HOUR
+        return if (hours <= 0.0) 0 else ((corpseCounts[type] ?: 0) / hours).roundToInt()
+    }
+
+    private fun resetBreakdown() {
+        corpseCounts.clear()
+        sessionStart = if (LocationUtils.isCurrentArea(Island.Mineshaft)) System.currentTimeMillis() else 0L
+    }
 
     private fun corpseSettings(type: CorpseType): CorpseSettings {
         val name = type.displayName.lowercase()
@@ -160,7 +181,11 @@ object CorpseESP : Module(
     private const val BREAKDOWN_ROW_GAP = 2f
     private const val BREAKDOWN_ICON_GAP = 4f
 
-    private val EXAMPLE_BREAKDOWN = linkedMapOf(
+    private const val MILLIS_PER_HOUR = 3_600_000.0
+
+    private val BREAKDOWN_ORDER = listOf(CorpseType.LAPIS, CorpseType.TUNGSTEN, CorpseType.UMBER, CorpseType.VANGUARD)
+
+    private val EXAMPLE_RATES = mapOf(
         CorpseType.LAPIS to 100,
         CorpseType.TUNGSTEN to 50,
         CorpseType.UMBER to 50,
