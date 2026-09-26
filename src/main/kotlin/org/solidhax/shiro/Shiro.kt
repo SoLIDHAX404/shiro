@@ -24,6 +24,7 @@ import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.RenderBatchManager
 import org.solidhax.shiro.utils.shiroId
 import org.solidhax.shiro.utils.skyblock.LocationUtils
+import org.solidhax.shiro.utils.skyblock.TabListUtils
 import java.io.File
 
 object Shiro : ClientModInitializer {
@@ -38,7 +39,7 @@ object Shiro : ClientModInitializer {
     val configDir: File = FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile()
 
     override fun onInitializeClient() {
-        listOf(EventDispatcher, LocationUtils, RenderBatchManager).forEach { EventBus.subscribe(it) }
+        listOf(EventDispatcher, LocationUtils, TabListUtils, RenderBatchManager).forEach { EventBus.subscribe(it) }
 
         ModuleManager.registerModules(
             ModuleConfig("shiro-config.json"),

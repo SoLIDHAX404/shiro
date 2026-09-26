@@ -5,6 +5,9 @@ import net.minecraft.network.protocol.Packet
 import net.minecraft.util.profiling.Profiler
 import net.minecraft.util.profiling.ProfilerFiller
 import org.solidhax.shiro.events.PacketEvent
+import org.solidhax.shiro.events.TabWidgetChangeEvent
+import org.solidhax.shiro.utils.skyblock.TabWidget
+import java.util.EnumSet
 
 object EventBus {
 
@@ -128,4 +131,15 @@ inline fun <reified P : Packet<*>> Any.onSend(
     noinline handler: P.(PacketEvent.Send) -> Unit
 ) = EventBus.registerListener(this.javaClass, PacketEvent.Send::class.java, priority, ignoreCancelled) {
     (it.packet as? P)?.handler(it)
+}
+
+fun Any.onTabWidget(
+    vararg widgets: TabWidget,
+    priority: Int = 0,
+    handler: TabWidgetChangeEvent.() -> Unit
+) {
+    val filter = EnumSet.noneOf(TabWidget::class.java).apply { addAll(widgets) }
+    EventBus.registerListener(this.javaClass, TabWidgetChangeEvent::class.java, priority, false) {
+        if (it.widget in filter) it.handler()
+    }
 }

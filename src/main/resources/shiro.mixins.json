@@ -15,7 +15,8 @@
     "EntityRendererMixin",
     "LevelExtractorMixin",
     "LivingEntityRendererAccessor",
-    "ModelPartAccessor"
+    "ModelPartAccessor",
+    "PlayerTabOverlayAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

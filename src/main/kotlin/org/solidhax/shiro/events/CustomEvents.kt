@@ -4,11 +4,14 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.AbstractLevelRenderCont
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.Packet
 import net.minecraft.world.entity.Entity
 import org.solidhax.shiro.events.core.CancellableEvent
 import org.solidhax.shiro.events.core.Event
 import org.solidhax.shiro.utils.render.RenderConsumer
+import org.solidhax.shiro.utils.skyblock.TabListUtils
+import org.solidhax.shiro.utils.skyblock.TabWidget
 
 interface TickEvent : Event {
     class End(val level: ClientLevel) : TickEvent
@@ -41,4 +44,39 @@ class EntityGlowEvent(val entity: Entity) : Event {
         @JvmStatic
         fun colorOf(entity: Entity): Int? = EntityGlowEvent(entity).apply { postAndCatch() }.color
     }
+}
+
+class TabListChangeEvent(
+    val old: List<List<String>>,
+    val new: List<List<String>>,
+    val newComponents: List<List<Component>>,
+) : Event
+
+class TabListHeaderFooterChangeEvent(
+    val oldHeader: Component,
+    val oldFooter: Component,
+    val newHeader: Component,
+    val newFooter: Component,
+) : Event {
+    val newHeaderSections: List<List<String>> by lazy { TabListUtils.sectionsOf(newHeader) }
+    val newFooterSections: List<List<String>> by lazy { TabListUtils.sectionsOf(newFooter) }
+    val oldHeaderSections: List<List<String>> by lazy { TabListUtils.sectionsOf(oldHeader) }
+    val oldFooterSections: List<List<String>> by lazy { TabListUtils.sectionsOf(oldFooter) }
+}
+
+class TabWidgetChangeEvent(
+    val widget: TabWidget,
+    val oldTitle: String?,
+    val oldLines: List<String>,
+) : Event {
+    val title: String? get() = widget.title
+    val lines: List<String> get() = widget.lines
+    val values: Map<String, String> get() = widget.values
+
+    val isAdded: Boolean get() = oldTitle == null && widget.isActive
+    val isRemoved: Boolean get() = !widget.isActive
+
+    operator fun get(key: String): String? = widget[key]
+
+    fun group(name: String): String? = widget.group(name)
 }
