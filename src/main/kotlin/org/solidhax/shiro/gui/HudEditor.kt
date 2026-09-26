@@ -54,6 +54,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     private var dragging: HudSetting? = null
     private var resizing: HudSetting? = null
     private var selected: HudSetting? = null
+    private var menu: ContextMenu? = null
     private var offsetX = 0f
     private var offsetY = 0f
 
@@ -89,8 +90,8 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
         val mx = mouseX.toFloat()
         val my = mouseY.toFloat()
         val elements = elements
-        val toolbarHovered = isToolbarHovered(mx, my)
-        val hovered = if (toolbarHovered) null else hoveredElement(elements, mx, my)
+        val overUi = isToolbarHovered(mx, my) || menu?.isHovered(mx, my) == true
+        val hovered = if (overUi) null else hoveredElement(elements, mx, my)
 
         graphics.rectangle(0f, 0f, width.toFloat(), height.toFloat(), BACKDROP)
         if (gridEnabled) drawGrid(graphics)
@@ -115,6 +116,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
 
         drawToolbar(graphics, mx, my)
         graphics.text(HINT, (width - textWidth(HINT, HINT_SIZE)) / 2f, height - HINT_SIZE - EDGE_MARGIN, theme.textMuted, HINT_SIZE)
+        menu?.draw(graphics, width.toFloat(), height.toFloat(), mx, my)
 
         super.extractRenderState(graphics, mouseX, mouseY, deltaTicks)
     }
@@ -122,6 +124,9 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
         val mx = event.x().toFloat()
         val my = event.y().toFloat()
+
+        if (menu?.mouseClicked(mx, my, event.button()) == true) return true
+        menu = null
 
         if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             buttons.firstOrNull { it.isHovered(mx, my) }?.let {
@@ -148,10 +153,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
                 offsetY = hud.y - my
             }
 
-            InputConstants.MOUSE_BUTTON_RIGHT -> {
-                hud.reset()
-                hud.clamp(width.toFloat(), height.toFloat())
-            }
+            InputConstants.MOUSE_BUTTON_RIGHT -> menu = ContextMenu(mx, my, hovered.name, hud.settings)
         }
         return true
     }
@@ -160,6 +162,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
         val mx = event.x().toFloat()
         val my = event.y().toFloat()
 
+        if (menu?.mouseDragged(mx, my, event.button(), deltaX.toFloat(), deltaY.toFloat()) == true) return true
         dragging?.value?.let {
             it.x = snap(mx + offsetX, it.scaledWidth, width.toFloat())
             it.y = snap(my + offsetY, it.scaledHeight, height.toFloat())
@@ -173,12 +176,14 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     }
 
     override fun mouseReleased(event: MouseButtonEvent): Boolean {
+        menu?.mouseReleased(event.button())
         dragging = null
         resizing = null
         return super.mouseReleased(event)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        if (menu?.mouseScrolled(mouseX.toFloat(), mouseY.toFloat(), verticalAmount.toFloat()) == true) return true
         val hovered = hoveredElement(elements, mouseX.toFloat(), mouseY.toFloat())
             ?: return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)
         scaleBy(hovered.value, verticalAmount.sign.toFloat() * SCALE_STEP)
@@ -186,6 +191,10 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     }
 
     override fun keyPressed(event: KeyEvent): Boolean {
+        if (menu != null && event.isEscape) {
+            menu = null
+            return true
+        }
         if (event.key() == InputConstants.KEY_G) {
             gridEnabled = !gridEnabled
             return true
@@ -217,6 +226,7 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
         dragging = null
         resizing = null
         selected = null
+        menu = null
         ModuleManager.saveConfigurations()
         savePrefs()
         super.removed()
@@ -409,5 +419,5 @@ object HudEditor : Screen(Component.literal("Shiro HUD Editor")) {
     private const val LABEL_BACKGROUND = 0xE0202123.toInt()
 
     private const val EMPTY = "No HUD elements are enabled. Turn on a module with a HUD to edit it here."
-    private const val HINT = "Drag to move · Drag corner to resize · Scroll to scale · Right-click to reset · Shift bypasses grid · G toggles grid"
+    private const val HINT = "Drag to move · Drag corner to resize · Scroll to scale · Right-click for options · Shift bypasses grid · G toggles grid"
 }

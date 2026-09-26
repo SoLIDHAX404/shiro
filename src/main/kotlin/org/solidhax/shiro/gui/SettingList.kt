@@ -46,8 +46,13 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     private val stateAnimations = Animations<Setting<*>>(STATE_DURATION)
     private val pressAnimations = Animations<Setting<*>>(PRESS_DURATION)
 
+    private val arrowAnimations = Animations<Int>()
+
     private var visible = emptyList<Setting<*>>()
-    private var preview: EntityPreview? = null
+    private var previewSetting: PreviewSetting? = null
+    private var previewX = 0f
+    private var previewY = 0f
+    private var previewWidth = 0f
     private var dragging: Setting<*>? = null
     private var drag: ((Float, Float) -> Unit)? = null
     private var listening: KeybindSetting? = null
@@ -55,21 +60,20 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     private val left get() = scroll.contentX + INNER_PADDING
     private val inner get() = scroll.contentWidth - INNER_PADDING * 2f
     private val right get() = left + inner
+    private val preview: EntityPreview? get() = previewSetting?.value
 
     override fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float, mouseX: Float, mouseY: Float) {
-        visible = settings.filter { it.isVisible && it !is PreviewSetting }
-        preview = settings.firstNotNullOfOrNull { (it as? PreviewSetting)?.takeIf(Setting<*>::isVisible)?.value }
-        var contentHeight = -SPACING
-        forEachCard { setting, _, _, gap -> contentHeight += height(setting) + gap }
+        val contentHeight = this.contentHeight
+        previewSetting = settings.firstNotNullOfOrNull { (it as? PreviewSetting)?.takeIf(Setting<*>::isVisible) }
 
-        val listWidth = if (preview == null) width else (width + PADDING) / 2f
+        val listWidth = if (previewSetting == null) width else (width + PADDING) / 2f
         val hovered = scroll.isHovered(mouseX, mouseY)
         scroll.draw(graphics, x, y, listWidth, height, contentHeight, mouseX, mouseY) {
             forEachCard { setting, cardY, corners, _ ->
                 drawCard(graphics, setting, cardY, corners, if (hovered) mouseX else -1f, if (hovered) mouseY else -1f)
             }
         }
-        preview?.let { drawPreview(graphics, it, x + listWidth, y + topPadding, width - listWidth - PADDING, height - topPadding - PADDING - HINT_AREA) }
+        previewSetting?.let { drawPreview(graphics, it, x + listWidth, y + topPadding, width - listWidth - PADDING, height - topPadding - PADDING - HINT_AREA, mouseX, mouseY) }
     }
 
     override fun mouseClicked(mouseX: Float, mouseY: Float, button: Int, doubleClick: Boolean): Boolean {
@@ -80,6 +84,12 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         }
         if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
         unfocus()
+        previewSetting?.let { setting ->
+            hoveredArrow(setting, mouseX, mouseY)?.let {
+                setting.cycle(it)
+                return true
+            }
+        }
         if (scroll.mouseClicked(mouseX, mouseY) || preview?.mouseClicked(mouseX, mouseY, doubleClick) == true) return true
         if (!scroll.isHovered(mouseX, mouseY)) return false
 
@@ -129,6 +139,14 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         unfocus()
         scroll.reset()
     }
+
+    val contentHeight: Float
+        get() {
+            visible = settings.filter { it.isVisible && it !is PreviewSetting }
+            var total = -SPACING
+            forEachCard { setting, _, _, gap -> total += height(setting) + gap }
+            return total
+        }
 
     private inline fun forEachCard(block: (Setting<*>, Float, CascadeGeometricRadius, Float) -> Unit) {
         var cardY = scroll.contentY
@@ -269,11 +287,42 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         Slider.draw(graphics, left, controlY(y), inner, start, end, active)
     }
 
-    private fun drawPreview(graphics: GuiGraphicsExtractor, preview: EntityPreview, x: Float, y: Float, width: Float, height: Float) {
+    private fun drawPreview(graphics: GuiGraphicsExtractor, setting: PreviewSetting, x: Float, y: Float, width: Float, height: Float, mouseX: Float, mouseY: Float) {
+        previewX = x
+        previewY = y
+        previewWidth = width
+        val preview = setting.value
+        val header = if (setting.cycles) SWITCHER_HEIGHT else 0f
+
         graphics.roundedRectangle(x, y, width, height, theme.card, Radius.LARGE)
-        preview.draw(graphics, x, y, width, height)
+        if (setting.cycles) drawSwitcher(graphics, setting, mouseX, mouseY)
+        preview.draw(graphics, x, y + header, width, height - header)
         val hint = if (preview.label?.position != null) LABEL_HINT else HINT
         graphics.text(hint, x + (width - textWidth(hint)) / 2f, y + height + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
+    }
+
+    private fun drawSwitcher(graphics: GuiGraphicsExtractor, setting: PreviewSetting, mouseX: Float, mouseY: Float) {
+        val name = setting.value.name
+        val textY = previewY + (SWITCHER_HEIGHT - TEXT_SIZE) / 2f
+        graphics.text(name, previewX + (previewWidth - textWidth(name)) / 2f, textY, theme.text)
+
+        val hovered = hoveredArrow(setting, mouseX, mouseY)
+        for (direction in ARROWS) {
+            val hover = arrowAnimations[direction].animate(hovered == direction)
+            val rotation = if (direction < 0) PI.toFloat() else 0f
+            graphics.icon(ModuleButton.CHEVRON, arrowX(setting, direction), textY + (TEXT_SIZE - ICON_SIZE) / 2f, ICON_SIZE, lerpColor(theme.textMuted, theme.text, hover), rotation)
+        }
+    }
+
+    private fun arrowX(setting: PreviewSetting, direction: Int): Float {
+        val offset = setting.previews.maxOf { textWidth(it.name) } / 2f + ARROW_GAP
+        val centerX = previewX + previewWidth / 2f
+        return if (direction < 0) centerX - offset - ICON_SIZE else centerX + offset
+    }
+
+    private fun hoveredArrow(setting: PreviewSetting, mouseX: Float, mouseY: Float): Int? {
+        if (!setting.cycles) return null
+        return ARROWS.firstOrNull { isAreaHovered(mouseX, mouseY, arrowX(setting, it) - ARROW_GRAB, previewY, ICON_SIZE + ARROW_GRAB * 2f, SWITCHER_HEIGHT) }
     }
 
     private fun drawKeybind(graphics: GuiGraphicsExtractor, setting: KeybindSetting, textY: Float, hover: Float) {
@@ -339,6 +388,10 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         private const val HINT = "Drag to rotate • Scroll to zoom"
         private const val LABEL_HINT = "Drag to rotate or move the tag • Scroll to zoom"
         private const val HINT_AREA = 14f
+        private const val SWITCHER_HEIGHT = 20f
+        private const val ARROW_GAP = 8f
+        private const val ARROW_GRAB = 4f
+        private val ARROWS = listOf(-1, 1)
         private const val UNBOUND = "None"
 
         private const val SWATCH_WIDTH = 18f

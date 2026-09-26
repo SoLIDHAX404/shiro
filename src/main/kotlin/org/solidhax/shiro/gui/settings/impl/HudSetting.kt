@@ -25,7 +25,7 @@ class HudSetting(
         desc: String,
         module: Module,
         render: GuiGraphicsExtractor.(example: Boolean) -> Pair<Float, Float>,
-    ) : this(name, HudElement(x, y, scale, true, render), toggleable, desc, module)
+    ) : this(name, HudElement(name, x, y, scale, true, render), toggleable, desc, module)
 
     override val default: HudElement = hud
     override var value: HudElement = default
@@ -39,6 +39,9 @@ class HudSetting(
         addProperty("y", value.y)
         addProperty("scale", value.scale)
         addProperty("enabled", value.enabled)
+        add("style", JsonObject().apply {
+            for (setting in value.settings) if (setting is Saving) add(setting.key, setting.write(gson))
+        })
     }
 
     override fun read(element: JsonElement, gson: Gson) {
@@ -47,5 +50,11 @@ class HudSetting(
         value.y = element.get("y")?.asFloat ?: value.y
         value.scale = element.get("scale")?.asFloat ?: value.scale
         value.enabled = if (toggleable) element.get("enabled")?.asBoolean ?: value.enabled else true
+        val style = element.get("style") as? JsonObject ?: return
+        for (setting in value.settings) {
+            if (setting is Saving) style.get(setting.key)?.let { setting.read(it, gson) }
+        }
     }
+
+    private val Setting<*>.key: String get() = parent?.let { "${it.name}.$name" } ?: name
 }

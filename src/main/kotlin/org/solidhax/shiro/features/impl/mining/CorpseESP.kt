@@ -51,16 +51,9 @@ object CorpseESP : Module(
 
     private val nameTagPosition = +LabelPositionSetting("Name Tag Position", desc = "Which side of each corpse the name tag sits on. Drag it in the preview to move it.")
 
-    private val previewLabel = PreviewLabel(nameTagPosition) { nameTagSegments(CorpseType.LAPIS, PREVIEW_DISTANCE) }
+    private val previewCorpse = DummyEntity { RemotePlayer(it, GameProfile(UUID(0L, 0L), "Steve")) }
 
-    private val preview = +PreviewSetting("Preview", EntityPreview(DummyEntity { RemotePlayer(it, GameProfile(UUID(0L, 0L), "Steve")) }, label = previewLabel) {
-        skin = DefaultPlayerSkin.getDefaultSkin()
-        sitting = true
-        equipment[EquipmentSlot.HEAD] = ItemStack(Items.SEA_LANTERN)
-        equipment[EquipmentSlot.CHEST] = leather(Items.LEATHER_CHESTPLATE)
-        equipment[EquipmentSlot.LEGS] = leather(Items.LEATHER_LEGGINGS)
-        equipment[EquipmentSlot.FEET] = leather(Items.LEATHER_BOOTS)
-    })
+    private val preview = +PreviewSetting("Preview", *CorpseType.entries.map(::corpsePreview).toTypedArray())
 
     private val breakdownHud by HUD("Corpse Breakdown", "Shows a breakdown of the corpses in the mineshaft.") { example ->
         var width = 0f
@@ -132,15 +125,24 @@ object CorpseESP : Module(
         }
     }
 
-    private fun leather(item: Item, color: Int = ARMOR_COLOR): ItemStack = ItemStack(item).apply { set(DataComponents.DYED_COLOR, DyedItemColor(color)) }
+    private fun corpsePreview(type: CorpseType) = EntityPreview(previewCorpse, type.displayName, PreviewLabel(nameTagPosition) { nameTagSegments(type, PREVIEW_DISTANCE) }) {
+        skin = DefaultPlayerSkin.getDefaultSkin()
+        sitting = true
+        equipment[EquipmentSlot.HEAD] = type.icon
+        equipment[EquipmentSlot.CHEST] = leather(Items.LEATHER_CHESTPLATE, type.armorColor)
+        equipment[EquipmentSlot.LEGS] = leather(Items.LEATHER_LEGGINGS, type.armorColor)
+        equipment[EquipmentSlot.FEET] = leather(Items.LEATHER_BOOTS, type.armorColor)
+    }
 
-    enum class CorpseType(val displayName: String, val helmetName: String, val defaultColor: Int, createIcon: () -> ItemStack) {
-        LAPIS("Lapis", "Lapis Armor Helmet", 0xFF0000FF.toInt(), { ItemStack(Items.SEA_LANTERN) }),
-        UMBER("Umber", "Yog Helmet", 0xFFB56222.toInt(), { createSkullStack("b565b5aa83d4aa7f7af22dc1271b2f0b27441f9ac1495f6b4653cf68dfb105ef") }),
-        TUNGSTEN("Tungsten", "Mineral Helmet", 0xFFFFFFFF.toInt(), { createSkullStack("d811f3e723bbd46393f8aad8556b1df8ed33f559be827f47fe736f704c35586e") }),
-        VANGUARD("Vanguard", "Vanguard Helmet", 0xFFF224B8.toInt(), { createSkullStack("9bb8687e73c84e310d1bc0231b842dad1f93001b6d9ba3329e3c8a685b535623") });
+    private fun leather(item: Item, color: Int): ItemStack = ItemStack(item).apply { set(DataComponents.DYED_COLOR, DyedItemColor(color)) }
 
-        val icon: ItemStack by lazy(createIcon)
+    enum class CorpseType(val displayName: String, val helmetName: String, val defaultColor: Int, val armorColor: Int, createIcon: CorpseType.() -> ItemStack) {
+        LAPIS("Lapis", "Lapis Armor Helmet", 0xFF0000FF.toInt(), 0x1A2A6C, { ItemStack(Items.SEA_LANTERN) }),
+        UMBER("Umber", "Yog Helmet", 0xFFB56222.toInt(), 0xB56222, { leather(Items.LEATHER_HELMET, armorColor) }),
+        TUNGSTEN("Tungsten", "Mineral Helmet", 0xFFFFFFFF.toInt(), 0x9E9E9E, { createSkullStack("a95280a7b21b06e3887f165c8ca7a03bfac96378acd96cdf5944bcd08a0b6587") }),
+        VANGUARD("Vanguard", "Vanguard Helmet", 0xFFF224B8.toInt(), 0x2986cc, { createSkullStack("9bb8687e73c84e310d1bc0231b842dad1f93001b6d9ba3329e3c8a685b535623") });
+
+        val icon: ItemStack by lazy { createIcon() }
 
         companion object {
             fun fromHelmet(name: String?): CorpseType? = entries.find { it.helmetName == name }
@@ -154,7 +156,6 @@ object CorpseESP : Module(
         val color: ColorSetting,
     )
 
-    private const val ARMOR_COLOR = 0x1A2A6C
     private const val PREVIEW_DISTANCE = 12
     private const val BREAKDOWN_ROW_GAP = 2f
     private const val BREAKDOWN_ICON_GAP = 4f

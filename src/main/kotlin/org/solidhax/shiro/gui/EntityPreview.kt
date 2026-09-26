@@ -51,6 +51,7 @@ import kotlin.math.pow
 
 class EntityPreview(
     private val entity: () -> Entity? = { mc.player },
+    val name: String = "",
     val label: PreviewLabel? = null,
     private val setup: EntityPreview.() -> Unit = {}
 ) {
@@ -90,12 +91,7 @@ class EntityPreview(
     private val labelMouse = Vector2f()
     private val labelGrab = Vector2f()
 
-    private var yaw = 0f
-    private var pitch = 0f
-    private var zoom = 1f
-    private var dragging = false
-    private var lastInteraction = 0L
-    private var lastFrame = 0L
+    var camera = PreviewCamera()
 
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float) {
         this.x = x
@@ -105,9 +101,9 @@ class EntityPreview(
         initialized
 
         val now = Util.getMillis()
-        val deltaSeconds = ((now - lastFrame) / 1000f).coerceIn(0f, MAX_DELTA)
-        lastFrame = now
-        if (autoSpin && !dragging && now - lastInteraction > IDLE_DELAY_MS) yaw += SPIN_SPEED * deltaSeconds
+        val deltaSeconds = ((now - camera.lastFrame) / 1000f).coerceIn(0f, MAX_DELTA)
+        camera.lastFrame = now
+        if (autoSpin && !camera.dragging && now - camera.lastInteraction > IDLE_DELAY_MS) camera.yaw += SPIN_SPEED * deltaSeconds
 
         val entity = entity() ?: return
         val renderer = mc.entityRenderDispatcher.getRenderer(entity)
@@ -137,16 +133,16 @@ class EntityPreview(
         // framed around the posed model, so sitting or posed entities stay centered and fit the preview
         val box = ModelBounds.of(renderer, state) ?: hitbox(state)
         val center = box.center.toVector3f()
-        val camera = Quaternionf().rotateX(pitch * DEG_TO_RAD)
-        val rotation = Quaternionf().rotateZ(PI.toFloat()).mul(camera).rotateY(-yaw * DEG_TO_RAD)
+        val tilt = Quaternionf().rotateX(camera.pitch * DEG_TO_RAD)
+        val rotation = Quaternionf().rotateZ(PI.toFloat()).mul(tilt).rotateY(-camera.yaw * DEG_TO_RAD)
         val translation = rotation.transform(Vector3f(center)).negate()
-        val blockSize = height * FIT * zoom / max(box.ysize, max(box.xsize, box.zsize)).toFloat()
+        val blockSize = height * FIT * camera.zoom / max(box.ysize, max(box.xsize, box.zsize)).toFloat()
         bounds = projectBounds(box, center, rotation, blockSize)
 
         val pose = graphics.pose()
         val min = pose.transformPosition(Vector2f(x + 1f, y + 1f))
         val max = pose.transformPosition(Vector2f(x + width - 1f, y + height - 1f))
-        graphics.entity(state, blockSize * pose.m00(), translation, rotation, camera, min.x.toInt(), min.y.toInt(), max.x.toInt(), max.y.toInt())
+        graphics.entity(state, blockSize * pose.m00(), translation, rotation, tilt, min.x.toInt(), min.y.toInt(), max.x.toInt(), max.y.toInt())
         drawLabel(graphics)
     }
 
@@ -196,12 +192,12 @@ class EntityPreview(
             return true
         }
         if (doubleClick) {
-            yaw = 0f
-            pitch = 0f
-            zoom = 1f
+            camera.yaw = 0f
+            camera.pitch = 0f
+            camera.zoom = 1f
         }
-        dragging = true
-        lastInteraction = Util.getMillis()
+        camera.dragging = true
+        camera.lastInteraction = Util.getMillis()
         return true
     }
 
@@ -212,24 +208,24 @@ class EntityPreview(
             label.position?.value = nearestNameTagPosition(bounds, label.segments(), labelMouse.x + labelGrab.x, labelMouse.y + labelGrab.y)
             return true
         }
-        if (!dragging) return false
-        yaw -= deltaX * ROTATE_SPEED
-        pitch = (pitch - deltaY * ROTATE_SPEED).coerceIn(-MAX_PITCH, MAX_PITCH)
-        lastInteraction = Util.getMillis()
+        if (!camera.dragging) return false
+        camera.yaw -= deltaX * ROTATE_SPEED
+        camera.pitch = (camera.pitch - deltaY * ROTATE_SPEED).coerceIn(-MAX_PITCH, MAX_PITCH)
+        camera.lastInteraction = Util.getMillis()
         return true
     }
 
     fun mouseReleased() {
         draggingLabel = false
-        if (!dragging) return
-        dragging = false
-        lastInteraction = Util.getMillis()
+        if (!camera.dragging) return
+        camera.dragging = false
+        camera.lastInteraction = Util.getMillis()
     }
 
     fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean {
         if (!isHovered(mouseX, mouseY)) return false
-        zoom = (zoom * ZOOM_STEP.pow(amount)).coerceIn(MIN_ZOOM, MAX_ZOOM)
-        lastInteraction = Util.getMillis()
+        camera.zoom = (camera.zoom * ZOOM_STEP.pow(amount)).coerceIn(MIN_ZOOM, MAX_ZOOM)
+        camera.lastInteraction = Util.getMillis()
         return true
     }
 
@@ -287,6 +283,15 @@ class EntityPreview(
         private const val MAX_ZOOM = 4f
         private const val DEG_TO_RAD = (PI / 180.0).toFloat()
     }
+}
+
+class PreviewCamera {
+    var yaw = 0f
+    var pitch = 0f
+    var zoom = 1f
+    var dragging = false
+    var lastInteraction = 0L
+    var lastFrame = 0L
 }
 
 data class ArmorStandPose(
