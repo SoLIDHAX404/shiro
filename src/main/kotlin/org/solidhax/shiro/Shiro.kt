@@ -17,6 +17,7 @@ import org.solidhax.shiro.events.core.EventBus
 import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.mining.LittlefootESP
+import org.solidhax.shiro.features.impl.mining.PickaxeAbility
 import org.solidhax.shiro.features.impl.misc.ArrayListModule
 import org.solidhax.shiro.features.impl.misc.AspectRatio
 import org.solidhax.shiro.features.impl.misc.TestModule
@@ -24,6 +25,7 @@ import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.RenderBatchManager
 import org.solidhax.shiro.utils.shiroId
 import org.solidhax.shiro.utils.skyblock.LocationUtils
+import org.solidhax.shiro.utils.skyblock.MiningUtils
 import org.solidhax.shiro.utils.skyblock.TabListUtils
 import java.io.File
 
@@ -39,13 +41,14 @@ object Shiro : ClientModInitializer {
     val configDir: File = FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile()
 
     override fun onInitializeClient() {
-        listOf(EventDispatcher, LocationUtils, TabListUtils, RenderBatchManager).forEach { EventBus.subscribe(it) }
+        listOf(EventDispatcher, LocationUtils, TabListUtils, MiningUtils, RenderBatchManager).forEach { EventBus.subscribe(it) }
 
         ModuleManager.registerModules(
             ModuleConfig("shiro-config.json"),
             TestModule,
             CorpseESP,
             LittlefootESP,
+            PickaxeAbility,
             ArrayListModule,
             AspectRatio,
         )
