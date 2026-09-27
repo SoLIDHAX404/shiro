@@ -4,10 +4,9 @@ import foo.starred.cascade.graphics.extensions.image.image
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import foo.starred.cascade.graphics.states.impl.image.data.CascadeImageFilter
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.resources.DefaultPlayerSkin
-import net.minecraft.resources.Identifier
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.localSkinTexture
 import org.solidhax.shiro.utils.truncate
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.TEXT_SIZE
@@ -30,7 +29,7 @@ object ProfileBadge {
     fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float) {
         val faceX = x + INSET
         val faceY = y + (HEIGHT - FACE_SIZE) / 2f
-        val skin = skinTexture()
+        val skin = localSkinTexture()
         for (u in LAYER_U) {
             graphics.image(skin, faceX, faceY, FACE_SIZE, FACE_SIZE, u, FACE_V0, u + 8f / 64f, FACE_V1, CascadeGeometricColor.WHITE, Radius.MEDIUM, CascadeImageFilter.NEAREST)
         }
@@ -38,9 +37,6 @@ object ProfileBadge {
         val textX = faceX + FACE_SIZE + INSET
         graphics.text(displayName(x + width - INSET - textX), textX, y + (HEIGHT - TEXT_SIZE) / 2f, theme.text)
     }
-
-    private fun skinTexture(): Identifier =
-        (mc.player?.skin ?: DefaultPlayerSkin.get(mc.user.profileId)).body().texturePath()
 
     private fun displayName(maxWidth: Float): String {
         val current = mc.user.name

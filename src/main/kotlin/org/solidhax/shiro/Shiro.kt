@@ -16,6 +16,7 @@ import org.solidhax.shiro.events.EventDispatcher
 import org.solidhax.shiro.events.core.EventBus
 import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.features.impl.mining.CorpseESP
+import org.solidhax.shiro.features.impl.mining.CrystalHollowsMap
 import org.solidhax.shiro.features.impl.mining.LittlefootESP
 import org.solidhax.shiro.features.impl.mining.PickaxeAbility
 import org.solidhax.shiro.features.impl.misc.ArrayListModule
@@ -47,6 +48,7 @@ object Shiro : ClientModInitializer {
             ModuleConfig("shiro-config.json"),
             TestModule,
             CorpseESP,
+            CrystalHollowsMap,
             LittlefootESP,
             PickaxeAbility,
             ArrayListModule,

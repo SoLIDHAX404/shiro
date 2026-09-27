@@ -67,7 +67,7 @@ object ModelBounds {
             min.min(point)
             max.max(point)
         }
-        visit(model.root(), poseStack, corner)
+        if (!state.isInvisible) visit(model.root(), poseStack, corner)
         val headLayer = accessor.shiroLayers().firstNotNullOfOrNull { it as? CustomHeadLayer<*, *> }
         if (headLayer != null && model is HeadedModel) visitHead(headLayer, model, state, poseStack, corner)
         if (min.x > max.x) return null

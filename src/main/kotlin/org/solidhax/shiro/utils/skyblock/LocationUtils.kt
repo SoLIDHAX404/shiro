@@ -28,7 +28,11 @@ object LocationUtils {
     var lobbyId: String? = null
         private set
 
+    var subArea: String? = null
+        private set
+
     private val lobbyRegex = Regex("\\d\\d/\\d\\d/\\d\\d (\\w{0,6}) *")
+    private val subAreaRegex = Regex("[⏣ф] (.+)")
 
     init {
         onReceive<ClientboundPlayerInfoUpdatePacket> {
@@ -42,9 +46,10 @@ object LocationUtils {
         }
 
         onReceive<ClientboundSetPlayerTeamPacket>(EventPriority.LOW) {
-            if (!isCurrentArea(Island.Unknown)) return@onReceive
             val text = parameters.getOrNull()?.let { it.playerPrefix.string.plus(it.playerSuffix.string).noControlCodes } ?: return@onReceive
 
+            subAreaRegex.find(text)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }?.let { subArea = it }
+            if (!isCurrentArea(Island.Unknown)) return@onReceive
             lobbyRegex.find(text)?.groupValues?.get(1)?.let { lobbyId = it }
         }
 
@@ -52,6 +57,7 @@ object LocationUtils {
             currentArea = if (mc.hasSingleplayerServer()) Island.SinglePlayer else Island.Unknown
             isInSkyblock = false
             lobbyId = null
+            subArea = null
         }
     }
 

@@ -7,3 +7,6 @@ import net.minecraft.world.item.component.ResolvableProfile
 
 fun createSkullStack(textureHash: String): ItemStack =
     ItemStack(Items.PLAYER_HEAD).apply { set(DataComponents.PROFILE, ResolvableProfile.createResolved(texturesProfile(textureHash))) }
+
+fun createSkullStackFromValue(texturesValue: String): ItemStack =
+    ItemStack(Items.PLAYER_HEAD).apply { set(DataComponents.PROFILE, ResolvableProfile.createResolved(texturesProfileFromValue(texturesValue))) }
