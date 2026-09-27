@@ -103,7 +103,7 @@ object CorpseESP : Module(
 
         on<HudRenderEvent> {
             for ((entity, type) in corpses) {
-                graphics.entityLabel(entity, partialTick, labelPosition.value, segments(type, playerDistance(entity.position())))
+                graphics.entityLabel(entity, partialTick, labelPosition.label(segments(type, playerDistance(entity.position()))))
             }
         }
 

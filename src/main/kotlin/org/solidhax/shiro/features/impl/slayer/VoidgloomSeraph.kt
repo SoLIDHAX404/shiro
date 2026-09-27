@@ -9,14 +9,14 @@ import java.util.Locale
 object VoidgloomSeraph : SlayerModule(
     SlayerType.VOIDGLOOM,
     DummyEntity(EntityTypes.ENDERMAN),
-    SlayerInfo(SlayerType.VOIDGLOOM, "IV", timer = "02:47", hits = 15, health = "45.2M"),
+    SlayerInfo(SlayerType.VOIDGLOOM, "IV", timer = "02:47", hits = 15, health = "45.2M", maxHealth = 50_000_000.0),
 ) {
     override fun timerText(info: SlayerInfo): LabelSegments {
         val timer = info.timer ?: return emptyList()
         val ticks = info.vehicleTicks ?: return super.timerText(info)
         val laser = (LASER_SECONDS - ticks / 20.0).coerceAtLeast(0.0)
         val laserText = if (laser <= 0.0) "Soon" else String.format(Locale.ROOT, "%.1fs", laser)
-        return listOf(laserText to color(timerColor), " $timer" to theme.textMuted)
+        return listOf(laserText to color(timerColor.value), " $timer" to theme.textMuted)
     }
 
     private const val LASER_SECONDS = 8.2

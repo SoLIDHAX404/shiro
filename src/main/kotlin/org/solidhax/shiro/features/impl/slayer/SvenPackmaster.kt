@@ -6,5 +6,5 @@ import org.solidhax.shiro.gui.DummyEntity
 object SvenPackmaster : SlayerModule(
     SlayerType.SVEN,
     DummyEntity(EntityTypes.WOLF),
-    SlayerInfo(SlayerType.SVEN, "IV", timer = "02:59", health = "1.4M"),
+    SlayerInfo(SlayerType.SVEN, "IV", timer = "02:59", health = "1.4M", maxHealth = 2_000_000.0),
 )

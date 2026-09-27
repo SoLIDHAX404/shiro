@@ -44,13 +44,14 @@ abstract class Setting<T>(
 
     companion object {
 
-        fun <K : Setting<T>, T> K.withDependency(dependency: () -> Boolean): K {
+        fun <K : Setting<*>> K.withDependency(dependency: () -> Boolean): K {
             visibilityDependency = dependency
             return this
         }
 
-        fun <K : Setting<T>, T> K.withDependency(dropdown: DropdownSetting): K {
-            visibilityDependency = { dropdown.enabled }
+        fun <K : Setting<*>> K.withDependency(dropdown: DropdownSetting): K {
+            val dependency = visibilityDependency
+            visibilityDependency = { dropdown.enabled && dependency?.invoke() != false }
             parent = dropdown
             return this
         }

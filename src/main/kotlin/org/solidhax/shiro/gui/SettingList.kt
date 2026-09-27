@@ -11,6 +11,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.resources.Identifier
+import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.cosmetics.CapeSetting
 import org.solidhax.shiro.gui.ClickGUI.theme
 import org.solidhax.shiro.gui.Page.Companion.PADDING
@@ -64,6 +65,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     private var dragging: Setting<*>? = null
     private var drag: ((Float, Float) -> Unit)? = null
     private var listening: KeybindSetting? = null
+    private var menu: ContextMenu? = null
 
     private val left get() = scroll.contentX + INNER_PADDING
     private val inner get() = scroll.contentWidth - INNER_PADDING * 2f
@@ -71,6 +73,16 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     private val preview: EntityPreview? get() = previewSetting?.value
 
     override fun draw(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float, mouseX: Float, mouseY: Float) {
+        val menu = menu
+        if (menu?.isHovered(mouseX, mouseY) == true) {
+            drawContent(graphics, x, y, width, height, -1f, -1f)
+        } else {
+            drawContent(graphics, x, y, width, height, mouseX, mouseY)
+        }
+        menu?.draw(graphics, mc.window.guiScaledWidth.toFloat(), mc.window.guiScaledHeight.toFloat(), mouseX, mouseY)
+    }
+
+    private fun drawContent(graphics: GuiGraphicsExtractor, x: Float, y: Float, width: Float, height: Float, mouseX: Float, mouseY: Float) {
         val contentHeight = this.contentHeight
         previewSetting = settings.firstNotNullOfOrNull { (it as? PreviewSetting)?.takeIf(Setting<*>::isVisible) }
 
@@ -90,6 +102,11 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
             listening = null
             return true
         }
+        menu?.let {
+            if (it.mouseClicked(mouseX, mouseY, button)) return true
+            menu = null
+        }
+        if (button == InputConstants.MOUSE_BUTTON_RIGHT) return openLabelMenu(mouseX, mouseY)
         if (button != InputConstants.MOUSE_BUTTON_LEFT) return false
         unfocus()
         previewSetting?.let { setting ->
@@ -108,6 +125,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     }
 
     override fun mouseDragged(mouseX: Float, mouseY: Float, button: Int, deltaX: Float, deltaY: Float): Boolean {
+        if (menu?.mouseDragged(mouseX, mouseY, button, deltaX, deltaY) == true) return true
         if (scroll.mouseDragged(deltaY)) return true
         drag?.let {
             it(mouseX, mouseY)
@@ -117,6 +135,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     }
 
     override fun mouseReleased(button: Int) {
+        menu?.mouseReleased(button)
         if (button != InputConstants.MOUSE_BUTTON_LEFT) return
         scroll.mouseReleased()
         preview?.mouseReleased()
@@ -125,11 +144,15 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     }
 
     override fun mouseScrolled(mouseX: Float, mouseY: Float, amount: Float): Boolean =
-        scroll.mouseScrolled(mouseX, mouseY, amount) || preview?.mouseScrolled(mouseX, mouseY, amount) == true
+        menu?.mouseScrolled(mouseX, mouseY, amount) == true || scroll.mouseScrolled(mouseX, mouseY, amount) || preview?.mouseScrolled(mouseX, mouseY, amount) == true
 
     override fun charTyped(event: CharacterEvent): Boolean = textFields.values.any { it.charTyped(event) }
 
     override fun keyPressed(event: KeyEvent): Boolean {
+        if (menu != null && event.isEscape) {
+            menu = null
+            return true
+        }
         listening?.let {
             it.value = if (event.isEscape) InputConstants.UNKNOWN else InputConstants.getKey(event)
             listening = null
@@ -141,6 +164,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
     override fun unfocus() {
         textFields.values.forEach { it.unfocus() }
         listening = null
+        menu = null
     }
 
     fun reset() {
@@ -278,6 +302,13 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         return true
     }
 
+    private fun openLabelMenu(mouseX: Float, mouseY: Float): Boolean {
+        val position = preview?.labelAt(mouseX, mouseY)?.position ?: return false
+        val reset = ActionSetting("Reset Position", desc = "Moves the label back to where it started.") { position.reset() }
+        menu = ContextMenu(mouseX, mouseY, position.title, position.settings + reset)
+        return true
+    }
+
     private fun startDrag(setting: Setting<*>, mouseX: Float, mouseY: Float, update: (Float, Float) -> Unit) {
         dragging = setting
         drag = update
@@ -391,7 +422,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         private const val QUARTER_TURN = (PI / 2.0).toFloat()
         private const val LISTENING = "..."
         private const val HINT = "Drag to rotate • Scroll to zoom"
-        private const val LABEL_HINT = "Drag to rotate or move labels • Scroll to zoom"
+        private const val LABEL_HINT = "Drag to move labels • Right-click one for options"
         private const val HINT_AREA = 14f
         private const val SWITCHER_HEIGHT = 20f
         private const val ARROW_GAP = 8f

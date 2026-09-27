@@ -7,5 +7,5 @@ import java.util.UUID
 object RiftstalkerBloodfiend : SlayerModule(
     SlayerType.VAMPIRE,
     DummyEntity.player { GameProfile(UUID(0L, 0L), "Bloodfiend") },
-    SlayerInfo(SlayerType.VAMPIRE, "V", timer = "03:30", health = "4.2k"),
+    SlayerInfo(SlayerType.VAMPIRE, "V", timer = "03:30", health = "4.2k", maxHealth = 6_000.0),
 )

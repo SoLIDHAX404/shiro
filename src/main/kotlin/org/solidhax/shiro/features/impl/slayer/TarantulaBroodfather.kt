@@ -6,5 +6,5 @@ import org.solidhax.shiro.gui.DummyEntity
 object TarantulaBroodfather : SlayerModule(
     SlayerType.TARANTULA,
     DummyEntity(EntityTypes.SPIDER),
-    SlayerInfo(SlayerType.TARANTULA, "IV", timer = "03:12", health = "1.5M"),
+    SlayerInfo(SlayerType.TARANTULA, "IV", timer = "03:12", health = "1.5M", maxHealth = 2_000_000.0),
 )

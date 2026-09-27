@@ -1,6 +1,7 @@
 package org.solidhax.shiro.utils.ui
 
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
+import foo.starred.cascade.graphics.extensions.rectangle.solid.rectangle
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.entity.Entity
@@ -15,7 +16,23 @@ import kotlin.math.abs
 
 typealias LabelSegments = List<Pair<String, CascadeGeometricColor>>
 
-private const val LABEL_PADDING = 4f
+data class LabelStyle(
+    val textSize: Float = TEXT_SIZE,
+    val shadow: Boolean = false,
+    val background: Background = Background.ROUNDED,
+    val backgroundColor: Int = DEFAULT_BACKGROUND,
+    val padding: Float = DEFAULT_PADDING,
+) {
+    enum class Background { NONE, ROUNDED, SQUARE }
+
+    companion object {
+        const val DEFAULT_BACKGROUND = 0x33000000
+        const val DEFAULT_PADDING = 4f
+    }
+}
+
+class Label(val position: LabelPosition, val segments: LabelSegments, val style: LabelStyle = LabelStyle())
+
 private const val LABEL_GAP = 2f
 private const val LABEL_SNAP = 4f
 
@@ -49,25 +66,26 @@ fun labelSegments(title: String?, titleColor: Int, distance: Int?): LabelSegment
 }
 
 /**
- * Where a label with [segments] goes when placed at [position] around [target].
+ * Where [label] goes around [target].
  */
-fun labelBounds(target: Bounds, position: LabelPosition, segments: LabelSegments): Bounds {
-    val width = segments.fold(0f) { total, (text, _) -> total + textWidth(text) } + LABEL_PADDING * 2f
-    return position.place(target.expand(LABEL_GAP), width, TEXT_SIZE + LABEL_PADDING)
+fun labelBounds(target: Bounds, label: Label): Bounds {
+    val style = label.style
+    val width = label.segments.fold(0f) { total, (text, _) -> total + textWidth(text, style.textSize) } + style.padding * 2f
+    return label.position.place(target.expand(LABEL_GAP), width, style.textSize + style.padding)
 }
 
-fun placeLabels(target: Bounds, labels: List<Pair<LabelPosition, LabelSegments>>): List<Bounds> {
-    val desired = labels.map { (position, segments) -> labelBounds(target, position, segments) }
+fun placeLabels(target: Bounds, labels: List<Label>): List<Bounds> {
+    val desired = labels.map { labelBounds(target, it) }
     val placed = arrayOfNulls<Bounds>(labels.size)
 
     for (side in COLUMN_SIDES) {
-        val indices = labels.indices.filter { labels[it].first.side == side }
+        val indices = labels.indices.filter { labels[it].position.side == side }
         stackColumn(indices.map { desired[it] }).forEachIndexed { index, bounds -> placed[indices[index]] = bounds }
     }
 
     for (index in labels.indices) {
         if (placed[index] != null) continue
-        val side = labels[index].first.side
+        val side = labels[index].position.side
         var bounds = desired[index]
         var pushes = 0
         while (pushes++ < labels.size) {
@@ -117,8 +135,8 @@ private val COLUMN_SIDES = listOf(LabelPosition.Side.CENTER, LabelPosition.Side.
 /**
  * The position around [target] whose label is centered closest to ([x], [y]), snapping to the middle of a side.
  */
-fun nearestLabelPosition(target: Bounds, segments: LabelSegments, x: Float, y: Float, others: List<Pair<LabelPosition, Bounds>> = emptyList()): LabelPosition {
-    val size = labelBounds(target, LabelPosition.TOP, segments)
+fun nearestLabelPosition(target: Bounds, label: Label, x: Float, y: Float, others: List<Pair<LabelPosition, Bounds>> = emptyList()): LabelPosition {
+    val size = labelBounds(target, Label(LabelPosition.TOP, label.segments, label.style))
     val position = LabelPosition.nearest(target.expand(LABEL_GAP), size.width, size.height, x, y, LABEL_SNAP)
     return if (position.side in COLUMN_SIDES) orderInColumn(position, y, others) else position
 }
@@ -138,18 +156,25 @@ private fun orderInColumn(position: LabelPosition, y: Float, others: List<Pair<L
     return LabelPosition(position.side, along.coerceIn(0f, 1f))
 }
 
-fun GuiGraphicsExtractor.label(bounds: Bounds, segments: LabelSegments) {
-    roundedRectangle(bounds.left, bounds.top, bounds.width, bounds.height, theme.card, Radius.MEDIUM)
-    var textX = bounds.left + LABEL_PADDING
-    for ((text, color) in segments) {
-        text(text, textX, bounds.top + LABEL_PADDING / 2f, color)
-        textX += textWidth(text)
+fun GuiGraphicsExtractor.label(bounds: Bounds, label: Label) {
+    val style = label.style
+    when (style.background) {
+        LabelStyle.Background.ROUNDED -> roundedRectangle(bounds.left, bounds.top, bounds.width, bounds.height, style.backgroundColor, Radius.MEDIUM)
+        LabelStyle.Background.SQUARE -> rectangle(bounds.left, bounds.top, bounds.width, bounds.height, style.backgroundColor)
+        LabelStyle.Background.NONE -> {}
+    }
+    withTextStyle(TextStyle(style.textSize, style.shadow)) {
+        var textX = bounds.left + style.padding
+        for ((text, color) in label.segments) {
+            text(text, textX, bounds.top + style.padding / 2f, color)
+            textX += textWidth(text)
+        }
     }
 }
 
-fun GuiGraphicsExtractor.labels(target: Bounds, labels: List<Pair<LabelPosition, LabelSegments>>) {
-    val shown = labels.filter { it.second.isNotEmpty() }
-    placeLabels(target, shown).forEachIndexed { index, bounds -> label(bounds, shown[index].second) }
+fun GuiGraphicsExtractor.labels(target: Bounds, labels: List<Label>) {
+    val shown = labels.filter { it.segments.isNotEmpty() }
+    placeLabels(target, shown).forEachIndexed { index, bounds -> label(bounds, shown[index]) }
 }
 
 /**
@@ -158,13 +183,13 @@ fun GuiGraphicsExtractor.labels(target: Bounds, labels: List<Pair<LabelPosition,
 fun GuiGraphicsExtractor.worldLabel(pos: Vec3, segments: LabelSegments) {
     if (segments.isEmpty()) return
     val point = worldToScreen(pos) ?: return
-    labels(Bounds(point.x, point.y, point.x, point.y), listOf(LabelPosition.CENTER to segments))
+    labels(Bounds(point.x, point.y, point.x, point.y), listOf(Label(LabelPosition.CENTER, segments)))
 }
 
-fun GuiGraphicsExtractor.entityLabels(entity: Entity, partialTick: Float, labels: List<Pair<LabelPosition, LabelSegments>>) {
-    if (labels.all { it.second.isEmpty() }) return
+fun GuiGraphicsExtractor.entityLabels(entity: Entity, partialTick: Float, labels: List<Label>) {
+    if (labels.all { it.segments.isEmpty() }) return
     labels(screenBounds(ModelBounds.of(entity, partialTick)) ?: return, labels)
 }
 
-fun GuiGraphicsExtractor.entityLabel(entity: Entity, partialTick: Float, position: LabelPosition, segments: LabelSegments) =
-    entityLabels(entity, partialTick, listOf(position to segments))
+fun GuiGraphicsExtractor.entityLabel(entity: Entity, partialTick: Float, label: Label) =
+    entityLabels(entity, partialTick, listOf(label))

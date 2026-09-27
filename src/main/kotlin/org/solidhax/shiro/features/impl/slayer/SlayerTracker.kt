@@ -19,7 +19,25 @@ class SlayerInfo(
     var health: String? = null,
     var vehicleTicks: Int? = null,
     var killTime: Double? = null,
-)
+    var maxHealth: Double? = null,
+) {
+    val healthFraction: Float?
+        get() {
+            val current = parseHealth(health ?: return null) ?: return null
+            val max = maxHealth?.takeIf { it > 0.0 } ?: return null
+            return (current / max).toFloat().coerceIn(0f, 1f)
+        }
+}
+
+fun parseHealth(text: String): Double? {
+    val number = text.trimEnd('k', 'M', 'B').replace(",", "").toDoubleOrNull() ?: return null
+    return number * when (text.lastOrNull()) {
+        'k' -> 1_000.0
+        'M' -> 1_000_000.0
+        'B' -> 1_000_000_000.0
+        else -> 1.0
+    }
+}
 
 class Slayer(val entity: LivingEntity, val owned: Boolean, val info: SlayerInfo) {
 
@@ -35,7 +53,12 @@ class Slayer(val entity: LivingEntity, val owned: Boolean, val info: SlayerInfo)
         val name = level.getEntity(entity.id + 1)?.strippedName
         if (name != null) {
             info.hits = HITS_REGEX.find(name)?.groupValues?.get(1)?.toIntOrNull()
-            HEALTH_REGEX.find(name)?.let { info.health = it.groupValues[1] }
+            HEALTH_REGEX.find(name)?.let { match ->
+                val health = match.groupValues[1]
+                info.health = health
+                val value = parseHealth(health) ?: return@let
+                if (value > (info.maxHealth ?: 0.0)) info.maxHealth = value
+            }
         }
 
         val timer = level.getEntity(entity.id + 2)?.strippedName?.trim()

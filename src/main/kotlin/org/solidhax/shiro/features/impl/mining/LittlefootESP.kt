@@ -58,7 +58,7 @@ object LittlefootESP : Module(
 
         on<HudRenderEvent> {
             for (entity in littlefoots) {
-                graphics.entityLabel(entity, partialTick, labelPosition.value, segments(playerDistance(entity.position())))
+                graphics.entityLabel(entity, partialTick, labelPosition.label(segments(playerDistance(entity.position()))))
             }
         }
 
