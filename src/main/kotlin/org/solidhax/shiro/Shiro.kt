@@ -19,7 +19,6 @@ import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.mining.CrystalHollowsMap
 import org.solidhax.shiro.features.impl.mining.LittlefootESP
 import org.solidhax.shiro.features.impl.mining.PickaxeAbility
-import org.solidhax.shiro.features.impl.misc.ArrayListModule
 import org.solidhax.shiro.features.impl.misc.AspectRatio
 import org.solidhax.shiro.features.impl.misc.TestModule
 import org.solidhax.shiro.utils.render.ItemRenderer
@@ -51,7 +50,6 @@ object Shiro : ClientModInitializer {
             CrystalHollowsMap,
             LittlefootESP,
             PickaxeAbility,
-            ArrayListModule,
             AspectRatio,
         )
 
