@@ -1,10 +1,7 @@
 package org.solidhax.shiro.features.impl.mining
 
-import foo.starred.cascade.graphics.extensions.image.image
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
 import foo.starred.cascade.graphics.extensions.rectangle.solid.rectangle
-import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
-import foo.starred.cascade.graphics.states.impl.image.data.CascadeImageFilter
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
@@ -23,8 +20,8 @@ import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.NumberSetting
 import org.solidhax.shiro.utils.PlayerPosition
 import org.solidhax.shiro.utils.localPlayerPosition
-import org.solidhax.shiro.utils.localSkinTexture
 import org.solidhax.shiro.utils.modMessage
+import org.solidhax.shiro.utils.playerDistance
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.truncate
@@ -34,12 +31,12 @@ import org.solidhax.shiro.utils.ui.WHITE
 import org.solidhax.shiro.utils.ui.centeredText
 import org.solidhax.shiro.utils.ui.labelSegments
 import org.solidhax.shiro.utils.ui.lineHeight
+import org.solidhax.shiro.utils.ui.playerFace
 import org.solidhax.shiro.utils.ui.withAlpha
 import org.solidhax.shiro.utils.ui.worldLabel
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
-import kotlin.math.roundToInt
 
 object CrystalHollowsMap : Module(
     name = "Crystal Hollows Map",
@@ -70,8 +67,8 @@ object CrystalHollowsMap : Module(
         val coordinates = "${floor(position.x).toInt()}, ${floor(position.y).toInt()}, ${floor(position.z).toInt()}"
         val zoneY = MAP_SIZE + LOCATION_GAP
         val coordinatesY = zoneY + lineHeight + LINE_GAP
-        centeredText(zone.truncate(MAP_SIZE, lineHeight), MAP_SIZE / 2f, zoneY, CascadeGeometricColor(WHITE))
-        centeredText(coordinates.truncate(MAP_SIZE, lineHeight), MAP_SIZE / 2f, coordinatesY, CascadeGeometricColor(WHITE))
+        centeredText(zone.truncate(MAP_SIZE, lineHeight), MAP_SIZE / 2f, zoneY, WHITE)
+        centeredText(coordinates.truncate(MAP_SIZE, lineHeight), MAP_SIZE / 2f, coordinatesY, WHITE)
         MAP_SIZE to coordinatesY + lineHeight
     }
 
@@ -89,11 +86,9 @@ object CrystalHollowsMap : Module(
 
         on<HudRenderEvent> {
             if (!worldLabels || !LocationUtils.isCurrentArea(Island.CrystalHollows)) return@on
-            val player = mc.player ?: return@on
             for (found in StructureScanner.found) {
                 val pos = Vec3.atCenterOf(found.pos)
-                val distance = player.position().distanceTo(pos).roundToInt()
-                graphics.worldLabel(pos, labelSegments(found.structure.displayName, found.structure.color, distance.takeIf { showDistance }))
+                graphics.worldLabel(pos, labelSegments(found.structure.displayName, found.structure.color, playerDistance(pos).takeIf { showDistance }))
             }
         }
     }
@@ -119,7 +114,7 @@ object CrystalHollowsMap : Module(
     private fun GuiGraphicsExtractor.drawLines(lines: List<Pair<String, Int>>, centerX: Float, centerY: Float, size: Float) {
         var y = centerY - lines.size * size / 2f
         for ((line, color) in lines) {
-            centeredText(line, centerX, y, CascadeGeometricColor(color), size)
+            centeredText(line, centerX, y, color, size)
             y += size
         }
     }
@@ -137,7 +132,6 @@ object CrystalHollowsMap : Module(
     }
 
     private fun GuiGraphicsExtractor.drawHead(x: Float, y: Float, yaw: Float) {
-        val skin = localSkinTexture()
         val half = headSize / 2f
         val reach = half * SQRT_2 + HEAD_BORDER
 
@@ -145,9 +139,7 @@ object CrystalHollowsMap : Module(
         pose().translate(x.coerceIn(reach, MAP_SIZE - reach), y.coerceIn(reach, MAP_SIZE - reach))
         pose().rotate((yaw - 180f) * Mth.DEG_TO_RAD)
         roundedRectangle(-half - HEAD_BORDER, -half - HEAD_BORDER, headSize + HEAD_BORDER * 2f, headSize + HEAD_BORDER * 2f, BLACK, Radius.MEDIUM)
-        for (u in FACE_LAYER_U) {
-            image(skin, -half, -half, headSize, headSize, u, FACE_V0, u + FACE_UV_SIZE, FACE_V1, CascadeGeometricColor.WHITE, Radius.SMALL, CascadeImageFilter.NEAREST)
-        }
+        playerFace(-half, -half, headSize, Radius.SMALL)
         pose().popMatrix()
     }
 
@@ -191,10 +183,6 @@ object CrystalHollowsMap : Module(
 
     private const val HEAD_BORDER = 1f
     private const val SQRT_2 = 1.4142135f
-    private const val FACE_UV_SIZE = 8f / 64f
-    private const val FACE_V0 = 8f / 64f
-    private const val FACE_V1 = 16f / 64f
-    private val FACE_LAYER_U = floatArrayOf(8f / 64f, 40f / 64f)
 
     private val EXAMPLE_POSITION = PlayerPosition(513.0, 106.0, 526.0, 180f)
     private val EXAMPLE_STRUCTURES = listOf(

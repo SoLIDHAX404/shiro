@@ -12,13 +12,10 @@ import java.util.Base64
 import java.util.UUID
 
 fun texturesProfile(textureHash: String): GameProfile {
-    val textures = """{"textures":{"SKIN":{"url":"http://textures.minecraft.net/texture/$textureHash"}}}"""
+    val textures = """{"textures":{"SKIN":{"url":"$TEXTURE_URL$textureHash"}}}"""
     val property = Property("textures", Base64.getEncoder().encodeToString(textures.toByteArray()))
     return GameProfile(UUID.nameUUIDFromBytes(textureHash.toByteArray()), "_", PropertyMap(ImmutableMultimap.of("textures", property)))
 }
-
-fun texturesProfileFromValue(value: String): GameProfile =
-    GameProfile(UUID.nameUUIDFromBytes(value.toByteArray()), "_", PropertyMap(ImmutableMultimap.of("textures", Property("textures", value))))
 
 val GameProfile.skinTexture: String?
     get() {
@@ -31,3 +28,5 @@ val GameProfile.skinTexture: String?
 
 fun localSkinTexture(): Identifier =
     (mc.player?.skin ?: DefaultPlayerSkin.get(mc.user.profileId)).body().texturePath()
+
+private const val TEXTURE_URL = "http://textures.minecraft.net/texture/"

@@ -18,6 +18,8 @@ private const val LABEL_PADDING = 4f
 private const val LABEL_GAP = 2f
 private const val LABEL_SNAP = 4f
 
+const val PREVIEW_DISTANCE = 12
+
 /**
  * Projects a world position onto the GUI-scaled screen, or null when it is behind the camera.
  */
@@ -53,10 +55,6 @@ fun labelBounds(target: Bounds, position: LabelPosition, segments: LabelSegments
     return position.place(target.expand(LABEL_GAP), width, TEXT_SIZE + LABEL_PADDING)
 }
 
-/**
- * Where each of [labels] goes around [target]. A label that would overlap one placed before it is pushed further out
- * from [target], so labels sharing a position stack instead of covering each other.
- */
 fun placeLabels(target: Bounds, labels: List<Pair<LabelPosition, LabelSegments>>): List<Bounds> {
     val placed = ArrayList<Bounds>(labels.size)
     for ((position, segments) in labels) {
@@ -78,7 +76,7 @@ private fun pushOut(bounds: Bounds, blocker: Bounds, side: LabelPosition.Side): 
 }
 
 /**
- * The position around [target] whose label is centered closest to ([x], [y]), snapping to the middle of a side or the center.
+ * The position around [target] whose label is centered closest to ([x], [y]), snapping to the middle of a side.
  */
 fun nearestLabelPosition(target: Bounds, segments: LabelSegments, x: Float, y: Float): LabelPosition {
     val size = labelBounds(target, LabelPosition.TOP, segments)

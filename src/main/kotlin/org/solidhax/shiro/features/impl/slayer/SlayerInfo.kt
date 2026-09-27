@@ -22,7 +22,7 @@ import org.solidhax.shiro.gui.settings.impl.BooleanSetting
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
-import org.solidhax.shiro.utils.noControlCodes
+import org.solidhax.shiro.utils.strippedName
 import org.solidhax.shiro.utils.ui.LabelPosition
 import org.solidhax.shiro.utils.ui.LabelSegments
 import org.solidhax.shiro.utils.ui.entityLabels
@@ -136,14 +136,14 @@ object SlayerInfo : Module(
     private fun isShown(boss: Boss): Boolean = !onlyOwnBoss || boss.owned
 
     private fun track(level: ClientLevel, nameStand: ArmorStand, playerName: String?) {
-        val name = nameStand.customName?.string?.noControlCodes ?: return
+        val name = nameStand.strippedName ?: return
         if (!name.startsWith("☠") && !name.endsWith("❤") && !name.endsWith("❤ ✯") && !name.endsWith(" Hits")) return
         val type = SlayerBoss.fromName(name) ?: return
 
         val entity = level.getEntity(nameStand.id - 1) as? LivingEntity ?: return
         if (entity is ArmorStand || entity in bosses || !entity.isAlive) return
 
-        val owner = level.getEntity(nameStand.id + 2)?.customName?.string?.noControlCodes ?: return
+        val owner = level.getEntity(nameStand.id + 2)?.strippedName ?: return
         if (!owner.startsWith(OWNER_PREFIX)) return
 
         bosses[entity] = Boss(entity, owner.removePrefix(OWNER_PREFIX).trim() == playerName, BossInfo(type, type.tierOf(name)))
@@ -220,13 +220,13 @@ object SlayerInfo : Module(
         val standIds: IntRange get() = entity.id + 1..entity.id + 3
 
         fun update(level: ClientLevel) {
-            val name = level.getEntity(entity.id + 1)?.customName?.string?.noControlCodes
+            val name = level.getEntity(entity.id + 1)?.strippedName
             if (name != null) {
                 info.hits = HITS_REGEX.find(name)?.groupValues?.get(1)?.toIntOrNull()
                 HEALTH_REGEX.find(name)?.let { info.health = it.groupValues[1] }
             }
 
-            val timer = level.getEntity(entity.id + 2)?.customName?.string?.noControlCodes?.trim()
+            val timer = level.getEntity(entity.id + 2)?.strippedName?.trim()
             if (timer != null && ':' in timer && !timer.startsWith(OWNER_PREFIX)) info.timer = timer
 
             val vehicleTicks = entity.vehicle?.tickCount.takeIf { info.type == SlayerBoss.VOIDGLOOM }

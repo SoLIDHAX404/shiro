@@ -81,19 +81,12 @@ abstract class Module(
     private companion object {
         private fun getCategoryFromPackage(clazz: Class<out Module>): Category {
             val packageName = clazz.packageName
-            return when {
-                packageName.contains("general") -> Category.GENERAL
-                packageName.contains("mining") -> Category.MINING
-                packageName.contains("farming") -> Category.FARMING
-                packageName.contains("fishing") -> Category.FISHING
-                packageName.contains("slayer") -> Category.SLAYER
-                packageName.contains("misc") -> Category.MISC
-                else -> throw IllegalStateException(
-                    "Module ${clazz.name} failed to get category from the package it is in. " +
-                            "Either manually assign a category, " +
-                            "or put it under any valid package (general, mining, farming, fishing, slayer, misc)"
-                )
-            }
+            val categories = Category.categories.values
+            return categories.firstOrNull { packageName.contains(it.name.lowercase()) } ?: throw IllegalStateException(
+                "Module ${clazz.name} failed to get category from the package it is in. " +
+                        "Either manually assign a category, " +
+                        "or put it under any valid package (${categories.joinToString { it.name.lowercase() }})"
+            )
         }
     }
 }

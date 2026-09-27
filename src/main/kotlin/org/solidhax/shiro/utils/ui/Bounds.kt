@@ -40,8 +40,7 @@ data class Bounds(val left: Float, val top: Float, val right: Float, val bottom:
 
 /**
  * Where a label sits around some [Bounds]: just outside one [side], [along] that side from 0 (its top/left end) to 1 (its
- * bottom/right end). The ends reach past the corners, so a label can go anywhere around the bounds. [Side.CENTER] puts it
- * in the middle of the bounds and ignores [along].
+ * bottom/right end). The ends reach past the corners, so a label can go anywhere around the bounds.
  */
 data class LabelPosition(val side: Side, val along: Float) {
 
@@ -64,7 +63,6 @@ data class LabelPosition(val side: Side, val along: Float) {
 
         /**
          * The position whose label is centered closest to ([x], [y]), pulled to the middle of its side when within [snap].
-         * A point in the middle half of the bounds, or within [snap] of their center, is [CENTER].
          */
         fun nearest(bounds: Bounds, width: Float, height: Float, x: Float, y: Float, snap: Float = 0f): LabelPosition {
             val offsetX = abs(x - bounds.centerX)

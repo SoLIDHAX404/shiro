@@ -12,6 +12,7 @@ import org.solidhax.shiro.events.core.on
 import org.solidhax.shiro.events.core.onReceive
 import org.solidhax.shiro.utils.noControlCodes
 import org.solidhax.shiro.utils.startsWithOneOf
+import org.solidhax.shiro.utils.stripped
 import kotlin.jvm.optionals.getOrNull
 
 object LocationUtils {
@@ -37,7 +38,7 @@ object LocationUtils {
     init {
         onReceive<ClientboundPlayerInfoUpdatePacket> {
             if (!isCurrentArea(Island.Unknown) || ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME !in actions()) return@onReceive
-            val area = entries().find { it.displayName?.string?.startsWithOneOf("Area: ", "Dungeon: ") == true }?.displayName?.string ?: return@onReceive
+            val area = entries().firstNotNullOfOrNull { entry -> entry.displayName?.stripped?.takeIf { it.startsWithOneOf("Area: ", "Dungeon: ") } } ?: return@onReceive
             currentArea = Island.entries.firstOrNull { area.contains(it.displayName, true) } ?: Island.Unknown
         }
 

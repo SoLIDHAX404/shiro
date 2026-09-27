@@ -1,6 +1,5 @@
 package org.solidhax.shiro.features.impl.mining
 
-import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import org.solidhax.shiro.features.Module
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.utils.skyblock.MiningUtils
@@ -25,8 +24,8 @@ object PickaxeAbility : Module(
         val label = "${ability.name}: "
         val status = if (ability.isReady) "READY!" else String.format(Locale.ROOT, "%.2fs", floor(ability.cooldown * 100.0) / 100.0)
 
-        text(label, 0f, 0f, CascadeGeometricColor(nameColor))
-        text(status, textWidth(label), 0f, CascadeGeometricColor(if (ability.isReady) readyColor else cooldownColor))
+        text(label, 0f, 0f, nameColor)
+        text(status, textWidth(label), 0f, if (ability.isReady) readyColor else cooldownColor)
 
         textWidth(label) + textWidth(status) to lineHeight
     }

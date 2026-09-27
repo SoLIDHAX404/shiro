@@ -1,7 +1,8 @@
 package org.solidhax.shiro.utils
 
-import foo.starred.cascade.graphics.font.CascadeFonts
-import foo.starred.cascade.graphics.font.rendering.impl.FontRenderer
+import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.Entity
+import org.solidhax.shiro.utils.ui.textWidth
 
 private const val ELLIPSIS = "…"
 
@@ -28,12 +29,18 @@ inline val String?.noControlCodes: String
         return String(out, 0, outPos)
     }
 
+val Component.stripped: String
+    get() = string.noControlCodes
+
+val Entity.strippedName: String?
+    get() = customName?.stripped
+
 fun String.startsWithOneOf(vararg options: String, ignoreCase: Boolean = false): Boolean =
     options.any { this.startsWith(it, ignoreCase) }
 
-fun String.truncate(maxWidth: Float, size: Float, font: FontRenderer = CascadeFonts.sans): String {
-    if (font.width(this, size) <= maxWidth) return this
+fun String.truncate(maxWidth: Float, size: Float): String {
+    if (textWidth(this, size) <= maxWidth) return this
     var end = length
-    while (end > 0 && font.width(take(end) + ELLIPSIS, size) > maxWidth) end--
+    while (end > 0 && textWidth(take(end) + ELLIPSIS, size) > maxWidth) end--
     return take(end) + ELLIPSIS
 }

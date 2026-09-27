@@ -12,7 +12,7 @@ import org.solidhax.shiro.events.TabWidgetChangeEvent
 import org.solidhax.shiro.events.TickEvent
 import org.solidhax.shiro.events.core.on
 import org.solidhax.shiro.mixin.PlayerTabOverlayAccessor
-import org.solidhax.shiro.utils.noControlCodes
+import org.solidhax.shiro.utils.stripped
 import java.util.EnumMap
 
 object TabListUtils {
@@ -197,7 +197,4 @@ object TabListUtils {
 
     private val PlayerInfo.tabDisplayName: Component
         get() = tabListDisplayName ?: PlayerTeam.formatNameForTeam(team, Component.literal(profile.name))
-
-    private val Component.stripped: String
-        get() = string.noControlCodes
 }

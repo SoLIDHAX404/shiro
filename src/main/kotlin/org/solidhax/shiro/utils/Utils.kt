@@ -9,9 +9,6 @@ import org.solidhax.shiro.gui.ClickGUI.theme
 
 fun shiroId(path: String): Identifier = Identifier.fromNamespaceAndPath(MOD_ID, path)
 
-fun Any?.equalsOneOf(vararg options: Any?): Boolean =
-    options.any { this == it }
-
 fun modMessage(message: Component) {
     mc.player?.sendSystemMessage(Component.empty().append(Component.literal("[Shiro] ").withColor(theme.accent and 0xFFFFFF)).append(message))
 }

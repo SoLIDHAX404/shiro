@@ -11,18 +11,24 @@ import foo.starred.cascade.graphics.font.rendering.impl.FontRenderer
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import foo.starred.cascade.graphics.geometry.CascadeGeometricOffset
 import foo.starred.cascade.graphics.geometry.CascadeGeometricRadius
+import foo.starred.cascade.graphics.states.impl.image.data.CascadeImageFilter
 import foo.starred.cascade.wrappers.svg.impl.CascadeSVG
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.resources.Identifier
 import org.joml.Matrix3x2f
 import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.gui.ClickGUI.theme
+import org.solidhax.shiro.utils.localSkinTexture
 
 const val TEXT_SIZE = 8f
 
 private const val ACCENT_WIDTH = 2f
 private const val PANEL_BLUR_RADIUS = 30f
 private val PANEL_SHADOW_OFFSET = CascadeGeometricOffset(0f, 2f)
+
+private const val FACE_UV_SIZE = 8f / 64f
+private const val FACE_V0 = 8f / 64f
+private val FACE_LAYER_U = floatArrayOf(8f / 64f, 40f / 64f)
 
 val font: FontRenderer get() = CascadeFonts.sans
 
@@ -62,8 +68,14 @@ fun <T> withTextStyle(style: TextStyle, block: () -> T): T {
 fun GuiGraphicsExtractor.text(text: String, x: Float, y: Float, color: CascadeGeometricColor, size: Float = textStyle.size) =
     font.extract(this, text, x, y, color, shadow = textStyle.shadow, size = size)
 
+fun GuiGraphicsExtractor.text(text: String, x: Float, y: Float, color: Int, size: Float = textStyle.size) =
+    text(text, x, y, CascadeGeometricColor(color), size)
+
 fun GuiGraphicsExtractor.centeredText(text: String, centerX: Float, y: Float, color: CascadeGeometricColor, size: Float = textStyle.size) =
     text(text, centerX - textWidth(text, size) / 2f, y, color, size)
+
+fun GuiGraphicsExtractor.centeredText(text: String, centerX: Float, y: Float, color: Int, size: Float = textStyle.size) =
+    centeredText(text, centerX, y, CascadeGeometricColor(color), size)
 
 fun textWidth(text: String, size: Float = textStyle.size): Float = font.width(text, size)
 
@@ -71,6 +83,12 @@ fun GuiGraphicsExtractor.icon(id: Identifier, x: Float, y: Float, size: Float, c
     // rotate on top of the current pose; an explicit pose replaces it, which would drop outer transforms like the ClickGUI open/close scale
     val pose = if (rotation == 0f) null else Matrix3x2f(pose()).rotateAbout(rotation, x + size / 2f, y + size / 2f)
     image(svgTexture(id, size.toInt()), x, y, size, size, color = color, pose = pose)
+}
+
+fun GuiGraphicsExtractor.playerFace(x: Float, y: Float, size: Float, radius: CascadeGeometricRadius, skin: Identifier = localSkinTexture()) {
+    for (u in FACE_LAYER_U) {
+        image(skin, x, y, size, size, u, FACE_V0, u + FACE_UV_SIZE, FACE_V0 + FACE_UV_SIZE, CascadeGeometricColor.WHITE, radius, CascadeImageFilter.NEAREST)
+    }
 }
 
 fun GuiGraphicsExtractor.outlinedRectangle(x: Float, y: Float, width: Float, height: Float, fill: Int, outline: Int, radius: CascadeGeometricRadius) {

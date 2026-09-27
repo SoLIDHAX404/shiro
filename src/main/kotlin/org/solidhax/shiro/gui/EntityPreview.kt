@@ -1,9 +1,11 @@
 package org.solidhax.shiro.gui
 
+import com.mojang.authlib.GameProfile
 import foo.starred.cascade.graphics.extensions.rectangle.hollow.hollowRectangle
 import foo.starred.cascade.graphics.extensions.scissor.scissor
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.player.RemotePlayer
 import net.minecraft.client.model.HumanoidModel
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer
 import net.minecraft.client.renderer.entity.state.ArmedEntityRenderState
@@ -328,13 +330,15 @@ class DummyEntity<T : Entity>(private val create: (ClientLevel) -> T?) : () -> T
         }
     }
 
-    private companion object {
-        var nextId = -1
+    companion object {
+        private var nextId = -1
+
+        fun player(profile: () -> GameProfile): DummyEntity<RemotePlayer> = DummyEntity { RemotePlayer(it, profile()) }
     }
 }
 
 /**
- * A label drawn around the preview's bounding box. With a [position] setting it can be dragged anywhere around or onto the
- * box in the preview, which stores where it sits there; without one it stays on top.
+ * A label drawn around the preview's bounding box. With a [position] setting it can be dragged anywhere around the box
+ * in the preview, which stores where it sits there; without one it stays on top.
  */
 class PreviewLabel(val position: LabelPositionSetting? = null, val segments: () -> LabelSegments)

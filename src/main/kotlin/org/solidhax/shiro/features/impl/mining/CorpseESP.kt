@@ -1,7 +1,6 @@
 package org.solidhax.shiro.features.impl.mining
 
 import com.mojang.authlib.GameProfile
-import net.minecraft.client.player.RemotePlayer
 import net.minecraft.client.resources.DefaultPlayerSkin
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlot
@@ -28,11 +27,14 @@ import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.LabelPositionSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
 import org.solidhax.shiro.utils.createSkullStack
+import org.solidhax.shiro.utils.playerDistance
 import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.itemStack
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
+import org.solidhax.shiro.utils.stripped
 import org.solidhax.shiro.utils.ui.LabelSegments
+import org.solidhax.shiro.utils.ui.PREVIEW_DISTANCE
 import org.solidhax.shiro.utils.ui.entityLabel
 import org.solidhax.shiro.utils.ui.labelSegments
 import org.solidhax.shiro.utils.ui.lineHeight
@@ -49,7 +51,7 @@ object CorpseESP : Module(
 
     private val labelPosition = +LabelPositionSetting("Label Position", desc = "Where each corpse's label sits. Drag it in the preview to move it.")
 
-    private val previewCorpse = DummyEntity { RemotePlayer(it, GameProfile(UUID(0L, 0L), "Steve")) }
+    private val previewCorpse = DummyEntity.player { GameProfile(UUID(0L, 0L), "Steve") }
 
     private val preview = +PreviewSetting("Preview", *CorpseType.entries.map(::corpsePreview).toTypedArray())
 
@@ -88,7 +90,7 @@ object CorpseESP : Module(
 
             for (entity in level.entitiesForRendering()) {
                 if (entity !is ArmorStand || !entity.isAlive || entity.isInvisible || entity.name.string != "Armor Stand") continue
-                val type = CorpseType.fromHelmet(entity.getItemBySlot(EquipmentSlot.HEAD).customName?.string) ?: continue
+                val type = CorpseType.fromHelmet(entity.getItemBySlot(EquipmentSlot.HEAD).customName?.stripped) ?: continue
                 corpses[entity] = type
                 if (countedCorpses.add(entity.uuid)) corpseCounts.merge(type, 1, Int::plus)
             }
@@ -100,9 +102,8 @@ object CorpseESP : Module(
         }
 
         on<HudRenderEvent> {
-            val player = mc.player ?: return@on
             for ((entity, type) in corpses) {
-                graphics.entityLabel(entity, partialTick, labelPosition.value, segments(type, player.distanceTo(entity).roundToInt()))
+                graphics.entityLabel(entity, partialTick, labelPosition.value, segments(type, playerDistance(entity.position())))
             }
         }
 
@@ -134,12 +135,12 @@ object CorpseESP : Module(
         )
     }
 
-    private fun segments(type: CorpseType, distance: Int): LabelSegments {
+    private fun segments(type: CorpseType, distance: Int?): LabelSegments {
         val settings = type.settings
         return labelSegments(
             title = "${type.displayName} Corpse".takeIf { settings.showType.value },
             titleColor = settings.color.value,
-            distance = distance.takeIf { settings.showDistance.value },
+            distance = distance?.takeIf { settings.showDistance.value },
         )
     }
 
@@ -174,7 +175,6 @@ object CorpseESP : Module(
         val color: ColorSetting,
     )
 
-    private const val PREVIEW_DISTANCE = 12
     private const val BREAKDOWN_ROW_GAP = 2f
     private const val BREAKDOWN_ICON_GAP = 4f
 
