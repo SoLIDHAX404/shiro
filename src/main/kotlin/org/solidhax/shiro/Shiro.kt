@@ -20,7 +20,6 @@ import org.solidhax.shiro.features.impl.mining.CrystalHollowsMap
 import org.solidhax.shiro.features.impl.mining.LittlefootESP
 import org.solidhax.shiro.features.impl.mining.PickaxeAbility
 import org.solidhax.shiro.features.impl.misc.AspectRatio
-import org.solidhax.shiro.features.impl.misc.TestModule
 import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.RenderBatchManager
 import org.solidhax.shiro.utils.shiroId
@@ -45,7 +44,6 @@ object Shiro : ClientModInitializer {
 
         ModuleManager.registerModules(
             ModuleConfig("shiro-config.json"),
-            TestModule,
             CorpseESP,
             CrystalHollowsMap,
             LittlefootESP,
