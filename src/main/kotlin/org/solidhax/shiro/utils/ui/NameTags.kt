@@ -74,6 +74,16 @@ fun GuiGraphicsExtractor.nameTag(target: Bounds, position: LabelPosition, segmen
     if (segments.isNotEmpty()) nameTag(nameTagBounds(target, position, segments), segments)
 }
 
+/**
+ * Draws a name tag centered on the screen position of [pos].
+ */
+fun GuiGraphicsExtractor.worldNameTag(pos: Vec3, segments: NameTagSegments) {
+    if (segments.isEmpty()) return
+    val point = worldToScreen(pos) ?: return
+    val size = nameTagBounds(Bounds(point.x, point.y, point.x, point.y), LabelPosition.TOP, segments)
+    nameTag(Bounds.centered(point.x, point.y, size.width, size.height), segments)
+}
+
 fun GuiGraphicsExtractor.entityNameTag(entity: Entity, partialTick: Float, position: LabelPosition, segments: NameTagSegments) {
     if (segments.isEmpty()) return
     nameTag(screenBounds(ModelBounds.of(entity, partialTick)) ?: return, position, segments)

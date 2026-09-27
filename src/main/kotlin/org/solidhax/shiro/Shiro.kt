@@ -19,6 +19,7 @@ import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.mining.CrystalHollowsMap
 import org.solidhax.shiro.features.impl.mining.LittlefootESP
 import org.solidhax.shiro.features.impl.mining.PickaxeAbility
+import org.solidhax.shiro.features.impl.mining.crystalhollows.StructureScanner
 import org.solidhax.shiro.features.impl.misc.AspectRatio
 import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.RenderBatchManager
@@ -40,7 +41,7 @@ object Shiro : ClientModInitializer {
     val configDir: File = FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile()
 
     override fun onInitializeClient() {
-        listOf(EventDispatcher, LocationUtils, TabListUtils, MiningUtils, RenderBatchManager).forEach { EventBus.subscribe(it) }
+        listOf(EventDispatcher, LocationUtils, TabListUtils, MiningUtils, StructureScanner, RenderBatchManager).forEach { EventBus.subscribe(it) }
 
         ModuleManager.registerModules(
             ModuleConfig("shiro-config.json"),

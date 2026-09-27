@@ -2,16 +2,29 @@ package org.solidhax.shiro.features.impl.mining
 
 import foo.starred.cascade.graphics.extensions.image.image
 import foo.starred.cascade.graphics.extensions.rectangle.rounded.roundedRectangle
+import foo.starred.cascade.graphics.extensions.rectangle.solid.rectangle
 import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import foo.starred.cascade.graphics.states.impl.image.data.CascadeImageFilter
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.ChatFormatting
+import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
+import net.minecraft.world.phys.Vec3
+import org.solidhax.shiro.events.HudRenderEvent
+import org.solidhax.shiro.events.core.on
 import org.solidhax.shiro.features.Module
+import org.solidhax.shiro.features.impl.mining.crystalhollows.Structure
+import org.solidhax.shiro.features.impl.mining.crystalhollows.StructureScanner
+import org.solidhax.shiro.features.impl.mining.crystalhollows.StructureScanner.FoundStructure
+import org.solidhax.shiro.gui.settings.Setting.Companion.withDependency
 import org.solidhax.shiro.gui.settings.impl.BooleanSetting
+import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.NumberSetting
 import org.solidhax.shiro.utils.PlayerPosition
 import org.solidhax.shiro.utils.localPlayerPosition
 import org.solidhax.shiro.utils.localSkinTexture
+import org.solidhax.shiro.utils.modMessage
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.truncate
@@ -20,23 +33,35 @@ import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.TEXT_SIZE
 import org.solidhax.shiro.utils.ui.WHITE
 import org.solidhax.shiro.utils.ui.centeredText
+import org.solidhax.shiro.utils.ui.labelSegments
 import org.solidhax.shiro.utils.ui.withAlpha
+import org.solidhax.shiro.utils.ui.worldNameTag
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
+import kotlin.math.roundToInt
 
 object CrystalHollowsMap : Module(
     name = "Crystal Hollows Map",
-    description = "Shows a map of the Crystal Hollows with your position."
+    description = "Shows a map of the Crystal Hollows with your position and the structures found around it."
 ) {
     private val showLabels by BooleanSetting("Show Labels", true, desc = "Writes the zone names on the map.")
     private val showGemstones by BooleanSetting("Show Gemstones", true, desc = "Writes which gemstone each zone has below its name.")
     private val showLocation by BooleanSetting("Show Location", true, desc = "Shows the zone you are in and your coordinates below the map.")
     private val headSize by NumberSetting("Head Size", 10f, 6, 16, 1, desc = "Size of your head on the map.", unit = "px")
 
+    private val structuresDropdown = +DropdownSetting("Structures")
+    val scanStructures by BooleanSetting("Scan Structures", true, desc = "Scans loaded chunks for structures like the Mines of Divan or a Fairy Grotto.").withDependency(structuresDropdown)
+    private val mapMarkers by BooleanSetting("Map Markers", true, desc = "Marks found structures on the map.").withDependency(structuresDropdown)
+    private val nameTags by BooleanSetting("Name Tags", true, desc = "Shows the name of each found structure in the world.").withDependency(structuresDropdown)
+    private val showDistance by BooleanSetting("Show Distance", true, desc = "Shows how far away each structure is in its name tag.").withDependency(structuresDropdown)
+    private val chatMessages by BooleanSetting("Chat Messages", true, desc = "Sends a chat message with the coordinates when a structure is found.").withDependency(structuresDropdown)
+
     private val mapHud by HUD("Crystal Hollows Map", "Map of the Crystal Hollows.", toggleable = false) { example ->
         if (!example && !LocationUtils.isCurrentArea(Island.CrystalHollows)) return@HUD 0f to 0f
 
         drawZones()
+        if (mapMarkers) drawMarkers(if (example) EXAMPLE_STRUCTURES else StructureScanner.found)
         val position = if (example) EXAMPLE_POSITION else localPlayerPosition() ?: EXAMPLE_POSITION
         drawHead(position.x.toMap(), position.z.toMap(), position.yaw)
 
@@ -48,6 +73,29 @@ object CrystalHollowsMap : Module(
         centeredText(zone.truncate(MAP_SIZE, TEXT_SIZE), MAP_SIZE / 2f, zoneY, CascadeGeometricColor(WHITE))
         centeredText(coordinates.truncate(MAP_SIZE, TEXT_SIZE), MAP_SIZE / 2f, coordinatesY, CascadeGeometricColor(WHITE))
         MAP_SIZE to coordinatesY + TEXT_SIZE
+    }
+
+    init {
+        StructureScanner.onFound = { found ->
+            if (enabled && chatMessages) {
+                val pos = found.pos
+                modMessage(
+                    Component.empty()
+                        .append(Component.literal(found.structure.displayName).withColor(found.structure.color and 0xFFFFFF))
+                        .append(Component.literal(" found at ${pos.x}, ${pos.y}, ${pos.z}").withStyle(ChatFormatting.GRAY))
+                )
+            }
+        }
+
+        on<HudRenderEvent> {
+            if (!nameTags || !LocationUtils.isCurrentArea(Island.CrystalHollows)) return@on
+            val player = mc.player ?: return@on
+            for (found in StructureScanner.found) {
+                val pos = Vec3.atCenterOf(found.pos)
+                val distance = player.position().distanceTo(pos).roundToInt()
+                graphics.worldNameTag(pos, labelSegments(found.structure.displayName, found.structure.color, distance.takeIf { showDistance }))
+            }
+        }
     }
 
     private fun GuiGraphicsExtractor.drawZones() {
@@ -73,6 +121,18 @@ object CrystalHollowsMap : Module(
         for ((line, color) in lines) {
             centeredText(line, centerX, y, CascadeGeometricColor(color), size)
             y += size
+        }
+    }
+
+    private fun GuiGraphicsExtractor.drawMarkers(structures: List<FoundStructure>) {
+        val half = MARKER_SIZE / 2f
+        for (found in structures) {
+            pose().pushMatrix()
+            pose().translate(found.pos.x.toDouble().toMap().coerceIn(half, MAP_SIZE - half), found.pos.z.toDouble().toMap().coerceIn(half, MAP_SIZE - half))
+            pose().rotate(MARKER_ROTATION)
+            rectangle(-half - MARKER_BORDER, -half - MARKER_BORDER, MARKER_SIZE + MARKER_BORDER * 2f, MARKER_SIZE + MARKER_BORDER * 2f, BLACK)
+            rectangle(-half, -half, MARKER_SIZE, MARKER_SIZE, found.structure.color)
+            pose().popMatrix()
         }
     }
 
@@ -125,6 +185,10 @@ object CrystalHollowsMap : Module(
     private const val LOCATION_GAP = 5f
     private const val LINE_GAP = 2f
 
+    private const val MARKER_SIZE = 3.5f
+    private const val MARKER_BORDER = 0.75f
+    private const val MARKER_ROTATION = (PI / 4).toFloat()
+
     private const val HEAD_BORDER = 1f
     private const val SQRT_2 = 1.4142135f
     private const val FACE_UV_SIZE = 8f / 64f
@@ -133,4 +197,12 @@ object CrystalHollowsMap : Module(
     private val FACE_LAYER_U = floatArrayOf(8f / 64f, 40f / 64f)
 
     private val EXAMPLE_POSITION = PlayerPosition(513.0, 106.0, 526.0, 180f)
+    private val EXAMPLE_STRUCTURES = listOf(
+        FoundStructure(Structure.TEMPLE, BlockPos(290, 90, 300)),
+        FoundStructure(Structure.DIVAN, BlockPos(660, 70, 450)),
+        FoundStructure(Structure.KING, BlockPos(330, 80, 650)),
+        FoundStructure(Structure.QUEEN, BlockPos(300, 80, 720)),
+        FoundStructure(Structure.CITY, BlockPos(690, 70, 650)),
+        FoundStructure(Structure.BAL, BlockPos(610, 30, 750)),
+    )
 }
