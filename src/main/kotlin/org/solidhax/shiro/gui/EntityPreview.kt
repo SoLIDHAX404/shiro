@@ -202,7 +202,8 @@ class EntityPreview(
         val label = draggingLabel
         if (label != null) {
             labelMouse.add(deltaX, deltaY)
-            label.position?.value = nearestLabelPosition(bounds, label.segments(), labelMouse.x + labelGrab.x, labelMouse.y + labelGrab.y)
+            val others = placedLabels.filter { (other, _) -> other !== label }.map { (other, labelBounds) -> (other.position?.value ?: LabelPosition.TOP) to labelBounds }
+            label.position?.value = nearestLabelPosition(bounds, label.segments(), labelMouse.x + labelGrab.x, labelMouse.y + labelGrab.y, others)
             return true
         }
         if (!camera.dragging) return false

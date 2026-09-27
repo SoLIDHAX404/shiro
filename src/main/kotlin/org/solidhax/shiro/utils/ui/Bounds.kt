@@ -53,7 +53,7 @@ data class LabelPosition(val side: Side, val along: Float) {
             Side.BOTTOM -> Bounds.centered(lerp(track.left, track.right, along), track.bottom, width, height)
             Side.LEFT -> Bounds.centered(track.left, lerp(track.top, track.bottom, along), width, height)
             Side.RIGHT -> Bounds.centered(track.right, lerp(track.top, track.bottom, along), width, height)
-            Side.CENTER -> Bounds.centered(bounds.centerX, bounds.centerY, width, height)
+            Side.CENTER -> Bounds.centered(bounds.centerX, lerp(bounds.top, bounds.bottom, along), width, height)
         }
     }
 
@@ -67,7 +67,10 @@ data class LabelPosition(val side: Side, val along: Float) {
         fun nearest(bounds: Bounds, width: Float, height: Float, x: Float, y: Float, snap: Float = 0f): LabelPosition {
             val offsetX = abs(x - bounds.centerX)
             val offsetY = abs(y - bounds.centerY)
-            if ((offsetX <= bounds.width / 4f || offsetX <= snap) && (offsetY <= bounds.height / 4f || offsetY <= snap)) return CENTER
+            if ((offsetX <= bounds.width / 4f || offsetX <= snap) && (offsetY <= bounds.height / 4f || offsetY <= snap)) {
+                if (offsetY <= snap || bounds.height <= 0f) return CENTER
+                return LabelPosition(Side.CENTER, ((y - bounds.top) / bounds.height).coerceIn(0f, 1f))
+            }
 
             val track = track(bounds, width, height)
             val trackX = x.coerceIn(track.left, track.right)
