@@ -35,7 +35,7 @@ import org.solidhax.shiro.utils.ui.centeredText
 import org.solidhax.shiro.utils.ui.labelSegments
 import org.solidhax.shiro.utils.ui.lineHeight
 import org.solidhax.shiro.utils.ui.withAlpha
-import org.solidhax.shiro.utils.ui.worldNameTag
+import org.solidhax.shiro.utils.ui.worldLabel
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
@@ -53,8 +53,8 @@ object CrystalHollowsMap : Module(
     private val structuresDropdown = +DropdownSetting("Structures")
     val scanStructures by BooleanSetting("Scan Structures", true, desc = "Scans loaded chunks for structures like the Mines of Divan or a Fairy Grotto.").withDependency(structuresDropdown)
     private val mapMarkers by BooleanSetting("Map Markers", true, desc = "Marks found structures on the map.").withDependency(structuresDropdown)
-    private val nameTags by BooleanSetting("Name Tags", true, desc = "Shows the name of each found structure in the world.").withDependency(structuresDropdown)
-    private val showDistance by BooleanSetting("Show Distance", true, desc = "Shows how far away each structure is in its name tag.").withDependency(structuresDropdown)
+    private val worldLabels by BooleanSetting("World Labels", true, desc = "Shows a label with the name of each found structure in the world.").withDependency(structuresDropdown)
+    private val showDistance by BooleanSetting("Show Distance", true, desc = "Shows how far away each structure is in its label.").withDependency(structuresDropdown)
     private val chatMessages by BooleanSetting("Chat Messages", true, desc = "Sends a chat message with the coordinates when a structure is found.").withDependency(structuresDropdown)
 
     private val mapHud by HUD("Crystal Hollows Map", "Map of the Crystal Hollows.", toggleable = false) { example ->
@@ -88,12 +88,12 @@ object CrystalHollowsMap : Module(
         }
 
         on<HudRenderEvent> {
-            if (!nameTags || !LocationUtils.isCurrentArea(Island.CrystalHollows)) return@on
+            if (!worldLabels || !LocationUtils.isCurrentArea(Island.CrystalHollows)) return@on
             val player = mc.player ?: return@on
             for (found in StructureScanner.found) {
                 val pos = Vec3.atCenterOf(found.pos)
                 val distance = player.position().distanceTo(pos).roundToInt()
-                graphics.worldNameTag(pos, labelSegments(found.structure.displayName, found.structure.color, distance.takeIf { showDistance }))
+                graphics.worldLabel(pos, labelSegments(found.structure.displayName, found.structure.color, distance.takeIf { showDistance }))
             }
         }
     }

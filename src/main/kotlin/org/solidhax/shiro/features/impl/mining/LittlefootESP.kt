@@ -18,8 +18,8 @@ import org.solidhax.shiro.utils.skinTexture
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.texturesProfile
-import org.solidhax.shiro.utils.ui.NameTagSegments
-import org.solidhax.shiro.utils.ui.entityNameTag
+import org.solidhax.shiro.utils.ui.LabelSegments
+import org.solidhax.shiro.utils.ui.entityLabel
 import org.solidhax.shiro.utils.ui.labelSegments
 import kotlin.math.roundToInt
 
@@ -32,10 +32,10 @@ object LittlefootESP : Module(
     private val showDistance by BooleanSetting("Show Distance", false, desc = "Shows how far away Littlefoot is.")
     private val highlightColor by ColorSetting("Highlight Color", DEFAULT_COLOR, desc = "Color used to highlight Littlefoot.")
 
-    private val nameTagPosition = +LabelPositionSetting("Name Tag Position", desc = "Which side of Littlefoot the name tag sits on. Drag it in the preview to move it.")
+    private val labelPosition = +LabelPositionSetting("Label Position", desc = "Where Littlefoot's label sits. Drag it in the preview to move it.")
 
     private val profile by lazy { texturesProfile(LITTLEFOOT_TEXTURES.first()) }
-    private val preview = +PreviewSetting("Preview", EntityPreview(DummyEntity { RemotePlayer(it, profile) }, "Littlefoot", PreviewLabel(nameTagPosition) { nameTagSegments(PREVIEW_DISTANCE) }) {
+    private val preview = +PreviewSetting("Preview", EntityPreview(DummyEntity { RemotePlayer(it, profile) }, "Littlefoot", listOf(PreviewLabel(labelPosition) { segments(PREVIEW_DISTANCE) })) {
         skin = mc.skinManager.createLookup(profile, false)::get
     })
 
@@ -58,7 +58,7 @@ object LittlefootESP : Module(
         on<HudRenderEvent> {
             val player = mc.player ?: return@on
             for (entity in littlefoots) {
-                graphics.entityNameTag(entity, partialTick, nameTagPosition.value, nameTagSegments(player.distanceTo(entity).roundToInt()))
+                graphics.entityLabel(entity, partialTick, labelPosition.value, segments(player.distanceTo(entity).roundToInt()))
             }
         }
 
@@ -67,7 +67,7 @@ object LittlefootESP : Module(
         }
     }
 
-    private fun nameTagSegments(distance: Int): NameTagSegments =
+    private fun segments(distance: Int): LabelSegments =
         labelSegments(title = "Littlefoot".takeIf { showName }, titleColor = highlightColor, distance = distance.takeIf { showDistance })
 
     private val LITTLEFOOT_TEXTURES = setOf(

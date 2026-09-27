@@ -303,7 +303,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         graphics.roundedRectangle(x, y, width, height, theme.card, Radius.LARGE)
         if (setting.cycles) drawSwitcher(graphics, setting, mouseX, mouseY)
         preview.draw(graphics, x, y + header, width, height - header)
-        val hint = if (preview.label?.position != null) LABEL_HINT else HINT
+        val hint = if (preview.labels.any { it.position != null }) LABEL_HINT else HINT
         graphics.centeredText(hint, x + width / 2f, y + height + (HINT_AREA - TEXT_SIZE) / 2f, theme.textMuted)
     }
 
@@ -391,7 +391,7 @@ class SettingList(var settings: Collection<Setting<*>> = emptyList(), private va
         private const val QUARTER_TURN = (PI / 2.0).toFloat()
         private const val LISTENING = "..."
         private const val HINT = "Drag to rotate • Scroll to zoom"
-        private const val LABEL_HINT = "Drag to rotate or move the tag • Scroll to zoom"
+        private const val LABEL_HINT = "Drag to rotate or move labels • Scroll to zoom"
         private const val HINT_AREA = 14f
         private const val SWITCHER_HEIGHT = 20f
         private const val ARROW_GAP = 8f

@@ -14,6 +14,8 @@ data class Category private constructor(val name: String) {
         @JvmField
         val FISHING = custom("Fishing")
         @JvmField
+        val SLAYER = custom("Slayer")
+        @JvmField
         val MISC = custom("Misc")
 
         fun custom(name: String): Category {

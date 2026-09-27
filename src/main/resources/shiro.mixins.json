@@ -12,6 +12,7 @@
     "CameraMixin",
     "ConnectionMixin",
     "CustomHeadLayerAccessor",
+    "EntityRenderDispatcherMixin",
     "EntityRendererMixin",
     "LevelExtractorMixin",
     "LivingEntityRendererAccessor",

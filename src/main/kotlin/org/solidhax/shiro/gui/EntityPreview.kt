@@ -39,12 +39,12 @@ import org.solidhax.shiro.utils.render.ModelBounds
 import org.solidhax.shiro.utils.render.corners
 import org.solidhax.shiro.utils.ui.Bounds
 import org.solidhax.shiro.utils.ui.LabelPosition
-import org.solidhax.shiro.utils.ui.NameTagSegments
+import org.solidhax.shiro.utils.ui.LabelSegments
 import org.solidhax.shiro.utils.ui.Radius
 import org.solidhax.shiro.utils.ui.isAreaHovered
-import org.solidhax.shiro.utils.ui.nameTag
-import org.solidhax.shiro.utils.ui.nameTagBounds
-import org.solidhax.shiro.utils.ui.nearestNameTagPosition
+import org.solidhax.shiro.utils.ui.label
+import org.solidhax.shiro.utils.ui.nearestLabelPosition
+import org.solidhax.shiro.utils.ui.placeLabels
 import java.util.EnumMap
 import kotlin.math.PI
 import kotlin.math.max
@@ -53,7 +53,7 @@ import kotlin.math.pow
 class EntityPreview(
     private val entity: () -> Entity? = { mc.player },
     val name: String = "",
-    val label: PreviewLabel? = null,
+    val labels: List<PreviewLabel> = emptyList(),
     private val setup: EntityPreview.() -> Unit = {}
 ) {
 
@@ -87,8 +87,8 @@ class EntityPreview(
     var bounds = Bounds(0f, 0f, 0f, 0f)
         private set
 
-    private var labelBounds: Bounds? = null
-    private var draggingLabel = false
+    private var placedLabels: List<Pair<PreviewLabel, Bounds>> = emptyList()
+    private var draggingLabel: PreviewLabel? = null
     private val labelMouse = Vector2f()
     private val labelGrab = Vector2f()
 
@@ -144,7 +144,7 @@ class EntityPreview(
         val min = pose.transformPosition(Vector2f(x + 1f, y + 1f))
         val max = pose.transformPosition(Vector2f(x + width - 1f, y + height - 1f))
         graphics.entity(state, blockSize * pose.m00(), translation, rotation, tilt, min.x.toInt(), min.y.toInt(), max.x.toInt(), max.y.toInt())
-        drawLabel(graphics)
+        drawLabels(graphics)
     }
 
     private fun hitbox(state: EntityRenderState): AABB {
@@ -162,32 +162,28 @@ class EntityPreview(
         })
     }
 
-    private fun drawLabel(graphics: GuiGraphicsExtractor) {
-        val label = label ?: return
-        val segments = label.segments()
-        if (segments.isEmpty()) {
-            labelBounds = null
-            return
-        }
-        val position = label.position?.value ?: LabelPosition.TOP
-        val tag = nameTagBounds(bounds, position, segments)
-        labelBounds = tag
+    private fun drawLabels(graphics: GuiGraphicsExtractor) {
+        val shown = labels.map { it to it.segments() }.filter { it.second.isNotEmpty() }
+        val placed = placeLabels(bounds, shown.map { (label, segments) -> (label.position?.value ?: LabelPosition.TOP) to segments })
+        placedLabels = shown.mapIndexed { index, (label, _) -> label to placed[index] }
+        if (shown.isEmpty()) return
 
         graphics.scissor(x, y, width, height) {
-            if (draggingLabel) graphics.hollowRectangle(bounds.left, bounds.top, bounds.width, bounds.height, 1f, ClickGUI.theme.divider, Radius.SMALL)
-            graphics.nameTag(tag, segments)
+            if (draggingLabel != null) graphics.hollowRectangle(bounds.left, bounds.top, bounds.width, bounds.height, 1f, ClickGUI.theme.divider, Radius.SMALL)
+            shown.forEachIndexed { index, (_, segments) -> graphics.label(placed[index], segments) }
         }
     }
 
     fun mouseClicked(mouseX: Float, mouseY: Float, doubleClick: Boolean): Boolean {
         if (!isHovered(mouseX, mouseY)) return false
-        val position = label?.position
-        val tag = labelBounds
-        if (position != null && tag != null && tag.contains(mouseX, mouseY)) {
+        val grabbed = placedLabels.lastOrNull { (label, labelBounds) -> label.position != null && labelBounds.contains(mouseX, mouseY) }
+        if (grabbed != null) {
+            val (label, labelBounds) = grabbed
+            val position = label.position ?: return true
             if (doubleClick) position.value = position.default
-            draggingLabel = true
+            draggingLabel = label
             labelMouse.set(mouseX, mouseY)
-            labelGrab.set(tag.centerX - mouseX, tag.centerY - mouseY)
+            labelGrab.set(labelBounds.centerX - mouseX, labelBounds.centerY - mouseY)
             return true
         }
         if (doubleClick) {
@@ -201,10 +197,10 @@ class EntityPreview(
     }
 
     fun mouseDragged(deltaX: Float, deltaY: Float): Boolean {
-        if (draggingLabel) {
-            val label = label ?: return false
+        val label = draggingLabel
+        if (label != null) {
             labelMouse.add(deltaX, deltaY)
-            label.position?.value = nearestNameTagPosition(bounds, label.segments(), labelMouse.x + labelGrab.x, labelMouse.y + labelGrab.y)
+            label.position?.value = nearestLabelPosition(bounds, label.segments(), labelMouse.x + labelGrab.x, labelMouse.y + labelGrab.y)
             return true
         }
         if (!camera.dragging) return false
@@ -215,7 +211,7 @@ class EntityPreview(
     }
 
     fun mouseReleased() {
-        draggingLabel = false
+        draggingLabel = null
         if (!camera.dragging) return
         camera.dragging = false
         camera.lastInteraction = Util.getMillis()
@@ -338,7 +334,7 @@ class DummyEntity<T : Entity>(private val create: (ClientLevel) -> T?) : () -> T
 }
 
 /**
- * A name tag drawn around the preview's bounding box. With a [position] setting it can be dragged anywhere around the box
- * in the preview, which stores where it sits there; without one it stays on top.
+ * A label drawn around the preview's bounding box. With a [position] setting it can be dragged anywhere around or onto the
+ * box in the preview, which stores where it sits there; without one it stays on top.
  */
-class PreviewLabel(val position: LabelPositionSetting? = null, val segments: () -> NameTagSegments)
+class PreviewLabel(val position: LabelPositionSetting? = null, val segments: () -> LabelSegments)

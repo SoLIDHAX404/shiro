@@ -32,8 +32,8 @@ import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.itemStack
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
-import org.solidhax.shiro.utils.ui.NameTagSegments
-import org.solidhax.shiro.utils.ui.entityNameTag
+import org.solidhax.shiro.utils.ui.LabelSegments
+import org.solidhax.shiro.utils.ui.entityLabel
 import org.solidhax.shiro.utils.ui.labelSegments
 import org.solidhax.shiro.utils.ui.lineHeight
 import org.solidhax.shiro.utils.ui.text
@@ -47,7 +47,7 @@ object CorpseESP : Module(
 ) {
     private val corpseSettings = CorpseType.entries.associateWith(::corpseSettings)
 
-    private val nameTagPosition = +LabelPositionSetting("Name Tag Position", desc = "Which side of each corpse the name tag sits on. Drag it in the preview to move it.")
+    private val labelPosition = +LabelPositionSetting("Label Position", desc = "Where each corpse's label sits. Drag it in the preview to move it.")
 
     private val previewCorpse = DummyEntity { RemotePlayer(it, GameProfile(UUID(0L, 0L), "Steve")) }
 
@@ -102,7 +102,7 @@ object CorpseESP : Module(
         on<HudRenderEvent> {
             val player = mc.player ?: return@on
             for ((entity, type) in corpses) {
-                graphics.entityNameTag(entity, partialTick, nameTagPosition.value, nameTagSegments(type, player.distanceTo(entity).roundToInt()))
+                graphics.entityLabel(entity, partialTick, labelPosition.value, segments(type, player.distanceTo(entity).roundToInt()))
             }
         }
 
@@ -134,7 +134,7 @@ object CorpseESP : Module(
         )
     }
 
-    private fun nameTagSegments(type: CorpseType, distance: Int): NameTagSegments {
+    private fun segments(type: CorpseType, distance: Int): LabelSegments {
         val settings = type.settings
         return labelSegments(
             title = "${type.displayName} Corpse".takeIf { settings.showType.value },
@@ -143,7 +143,7 @@ object CorpseESP : Module(
         )
     }
 
-    private fun corpsePreview(type: CorpseType) = EntityPreview(previewCorpse, type.displayName, PreviewLabel(nameTagPosition) { nameTagSegments(type, PREVIEW_DISTANCE) }) {
+    private fun corpsePreview(type: CorpseType) = EntityPreview(previewCorpse, type.displayName, listOf(PreviewLabel(labelPosition) { segments(type, PREVIEW_DISTANCE) })) {
         skin = DefaultPlayerSkin::getDefaultSkin
         sitting = true
         equipment[EquipmentSlot.HEAD] = type.icon

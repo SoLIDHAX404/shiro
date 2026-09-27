@@ -14,6 +14,10 @@ data class Bounds(val left: Float, val top: Float, val right: Float, val bottom:
 
     fun contains(x: Float, y: Float): Boolean = x >= left && x < right && y >= top && y < bottom
 
+    fun overlaps(other: Bounds): Boolean = left < other.right && other.left < right && top < other.bottom && other.top < bottom
+
+    fun offset(x: Float, y: Float): Bounds = Bounds(left + x, top + y, right + x, bottom + y)
+
     companion object {
         fun of(points: Iterable<Vector2f>): Bounds {
             var left = Float.POSITIVE_INFINITY
@@ -36,11 +40,12 @@ data class Bounds(val left: Float, val top: Float, val right: Float, val bottom:
 
 /**
  * Where a label sits around some [Bounds]: just outside one [side], [along] that side from 0 (its top/left end) to 1 (its
- * bottom/right end). The ends reach past the corners, so a label can go anywhere around the bounds.
+ * bottom/right end). The ends reach past the corners, so a label can go anywhere around the bounds. [Side.CENTER] puts it
+ * in the middle of the bounds and ignores [along].
  */
 data class LabelPosition(val side: Side, val along: Float) {
 
-    enum class Side { TOP, BOTTOM, LEFT, RIGHT }
+    enum class Side { TOP, BOTTOM, LEFT, RIGHT, CENTER }
 
     fun place(bounds: Bounds, width: Float, height: Float): Bounds {
         val track = track(bounds, width, height)
@@ -49,16 +54,23 @@ data class LabelPosition(val side: Side, val along: Float) {
             Side.BOTTOM -> Bounds.centered(lerp(track.left, track.right, along), track.bottom, width, height)
             Side.LEFT -> Bounds.centered(track.left, lerp(track.top, track.bottom, along), width, height)
             Side.RIGHT -> Bounds.centered(track.right, lerp(track.top, track.bottom, along), width, height)
+            Side.CENTER -> Bounds.centered(bounds.centerX, bounds.centerY, width, height)
         }
     }
 
     companion object {
         val TOP = LabelPosition(Side.TOP, 0.5f)
+        val CENTER = LabelPosition(Side.CENTER, 0.5f)
 
         /**
          * The position whose label is centered closest to ([x], [y]), pulled to the middle of its side when within [snap].
+         * A point in the middle half of the bounds, or within [snap] of their center, is [CENTER].
          */
         fun nearest(bounds: Bounds, width: Float, height: Float, x: Float, y: Float, snap: Float = 0f): LabelPosition {
+            val offsetX = abs(x - bounds.centerX)
+            val offsetY = abs(y - bounds.centerY)
+            if ((offsetX <= bounds.width / 4f || offsetX <= snap) && (offsetY <= bounds.height / 4f || offsetY <= snap)) return CENTER
+
             val track = track(bounds, width, height)
             val trackX = x.coerceIn(track.left, track.right)
             val trackY = y.coerceIn(track.top, track.bottom)

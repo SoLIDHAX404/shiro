@@ -14,7 +14,7 @@ import org.solidhax.shiro.gui.settings.impl.DropdownSetting
 import org.solidhax.shiro.gui.settings.impl.NumberSetting
 import org.solidhax.shiro.gui.settings.impl.PreviewSetting
 import org.solidhax.shiro.gui.settings.impl.StringSetting
-import org.solidhax.shiro.utils.ui.NameTagSegments
+import org.solidhax.shiro.utils.ui.LabelSegments
 import org.solidhax.shiro.utils.ui.WHITE
 import org.solidhax.shiro.utils.ui.lerpColor
 import java.util.Optional
@@ -33,7 +33,7 @@ object CosmeticsManager {
 
     private val cape = CapeSetting("Cape")
 
-    private val preview = PreviewSetting("Preview", EntityPreview(label = PreviewLabel(segments = ::nameTagSegments)))
+    private val preview = PreviewSetting("Preview", EntityPreview(labels = listOf(PreviewLabel(segments = ::nameSegments))))
 
     val settings = listOf(displayNameDropdown, name, startColor, endColor, sizeDropdown, width, height, depth, cape, preview)
 
@@ -54,7 +54,7 @@ object CosmeticsManager {
         if (mc.player?.id == entityId) poseStack.scale(width.value / 100f, height.value / 100f, depth.value / 100f)
     }
 
-    private fun nameTagSegments(): NameTagSegments {
+    private fun nameSegments(): LabelSegments {
         val name = displayName
         if (!faded) return listOf(name to theme.text)
         return name.mapIndexed { index, char -> char.toString() to CascadeGeometricColor(nameColorAt(index, name.length)) }

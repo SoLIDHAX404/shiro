@@ -37,6 +37,8 @@ object LocationChangeEvent : Event
 
 class HudRenderEvent(val graphics: GuiGraphicsExtractor, val partialTick: Float) : Event
 
+class EntityRenderEvent(val entity: Entity) : CancellableEvent()
+
 class EntityGlowEvent(val entity: Entity) : Event {
     var color: Int? = null
 
