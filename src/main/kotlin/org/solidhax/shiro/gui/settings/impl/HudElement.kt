@@ -9,10 +9,13 @@ import org.solidhax.shiro.gui.settings.Setting
 import org.solidhax.shiro.gui.settings.Setting.Companion.withDependency
 import org.solidhax.shiro.utils.ui.BLACK
 import org.solidhax.shiro.utils.ui.Radius
+import org.solidhax.shiro.utils.ui.TEXT_SIZE
+import org.solidhax.shiro.utils.ui.TextStyle
 import org.solidhax.shiro.utils.ui.isAreaHovered
 import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
 import org.solidhax.shiro.utils.ui.withAlpha
+import org.solidhax.shiro.utils.ui.withTextStyle
 
 /**
  * A movable, scalable element drawn on the in-game HUD. Positions are in GUI-scaled coordinates.
@@ -44,13 +47,21 @@ class HudElement(
     val drawTitle = BooleanSetting("Draw Title", false, desc = "Draws the element's name above it.").withDependency(titleDropdown)
     val titlePadding = NumberSetting("Padding", 3f, 0, 12, 1, desc = "Space between the title and the content below it.", unit = "px").withDependency(titleDropdown)
 
+    private val textDropdown = DropdownSetting("Text")
+    val fontSize = NumberSetting("Font Size", TEXT_SIZE, 4, 16, 0.5, desc = "Size of the element's text.", unit = "px").withDependency(textDropdown)
+    val textShadow = BooleanSetting("Shadow", false, desc = "Draws a shadow behind the element's text.").withDependency(textDropdown)
+
     private val backgroundDropdown = DropdownSetting("Background")
     val backgroundType = SelectorSetting("Type", "None", listOf("None", "Rounded", "Square"), desc = "Shape drawn behind the element.").withDependency(backgroundDropdown)
     val backgroundColor = ColorSetting("Color", BLACK, desc = "Color of the background.").withDependency(backgroundDropdown)
     val backgroundOpacity = NumberSetting("Opacity", 50, 0, 100, 5, desc = "How see-through the background is.", unit = "%").withDependency(backgroundDropdown)
     val backgroundPadding = NumberSetting("Padding", 4f, 0, 12, 1, desc = "Space between the edge of the background and the content.", unit = "px").withDependency(backgroundDropdown)
 
-    val settings: List<Setting<*>> = listOf(titleDropdown, drawTitle, titlePadding, backgroundDropdown, backgroundType, backgroundColor, backgroundOpacity, backgroundPadding)
+    val settings: List<Setting<*>> = listOf(
+        titleDropdown, drawTitle, titlePadding,
+        textDropdown, fontSize, textShadow,
+        backgroundDropdown, backgroundType, backgroundColor, backgroundOpacity, backgroundPadding,
+    )
 
     var width: Float = 0f
         private set
@@ -63,7 +74,7 @@ class HudElement(
     /**
      * Draws the element, shifted onto the screen if it would go off it (without changing the saved position).
      */
-    fun draw(graphics: GuiGraphicsExtractor, example: Boolean) {
+    fun draw(graphics: GuiGraphicsExtractor, example: Boolean) = withTextStyle(TextStyle(fontSize.value, textShadow.enabled)) {
         val drawX = x.coerceIn(0f, (mc.window.guiScaledWidth - scaledWidth).coerceAtLeast(0f))
         val drawY = y.coerceIn(0f, (mc.window.guiScaledHeight - scaledHeight).coerceAtLeast(0f))
 
@@ -86,7 +97,7 @@ class HudElement(
         if (contentWidth <= 0f || contentHeight <= 0f) {
             this.width = 0f
             this.height = 0f
-            return
+            return@withTextStyle
         }
         val titleWidth = if (showTitle) textWidth(title, TITLE_SIZE) else 0f
         this.width = maxOf(contentWidth, titleWidth) + padding * 2f

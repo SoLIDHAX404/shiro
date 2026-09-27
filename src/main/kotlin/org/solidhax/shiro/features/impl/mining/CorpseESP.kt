@@ -33,9 +33,9 @@ import org.solidhax.shiro.utils.render.itemStack
 import org.solidhax.shiro.utils.skyblock.Island
 import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.ui.NameTagSegments
-import org.solidhax.shiro.utils.ui.TEXT_SIZE
 import org.solidhax.shiro.utils.ui.entityNameTag
 import org.solidhax.shiro.utils.ui.labelSegments
+import org.solidhax.shiro.utils.ui.lineHeight
 import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
 import java.util.UUID
@@ -57,19 +57,20 @@ object CorpseESP : Module(
         if (!example && sessionStart == 0L) return@HUD 0f to 0f
 
         var width = 0f
+        val rowHeight = maxOf(ItemRenderer.ITEM_SIZE, lineHeight)
         BREAKDOWN_ORDER.forEachIndexed { index, type ->
-            val rowY = index * (ItemRenderer.ITEM_SIZE + BREAKDOWN_ROW_GAP)
-            val textY = rowY + (ItemRenderer.ITEM_SIZE - TEXT_SIZE) / 2f
+            val rowY = index * (rowHeight + BREAKDOWN_ROW_GAP)
+            val textY = rowY + (rowHeight - lineHeight) / 2f
             val label = "${type.displayName}: "
             val rate = "${if (example) EXAMPLE_RATES.getValue(type) else perHour(type)}/h"
             val textX = ItemRenderer.ITEM_SIZE + BREAKDOWN_ICON_GAP
 
-            itemStack(type.icon, 0f, rowY)
+            itemStack(type.icon, 0f, rowY + (rowHeight - ItemRenderer.ITEM_SIZE) / 2f)
             text(label, textX, textY, theme.text)
             text(rate, textX + textWidth(label), textY, theme.textMuted)
             width = maxOf(width, textX + textWidth(label) + textWidth(rate))
         }
-        width to BREAKDOWN_ORDER.size * (ItemRenderer.ITEM_SIZE + BREAKDOWN_ROW_GAP) - BREAKDOWN_ROW_GAP
+        width to BREAKDOWN_ORDER.size * (rowHeight + BREAKDOWN_ROW_GAP) - BREAKDOWN_ROW_GAP
     }
 
     private val resetBreakdownAction = +ActionSetting("Reset Breakdown", desc = "Clears the corpse breakdown and restarts its timer.") { resetBreakdown() }

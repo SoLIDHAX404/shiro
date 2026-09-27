@@ -4,8 +4,8 @@ import foo.starred.cascade.graphics.geometry.CascadeGeometricColor
 import org.solidhax.shiro.features.Module
 import org.solidhax.shiro.gui.settings.impl.ColorSetting
 import org.solidhax.shiro.utils.skyblock.MiningUtils
-import org.solidhax.shiro.utils.ui.TEXT_SIZE
 import org.solidhax.shiro.utils.ui.WHITE
+import org.solidhax.shiro.utils.ui.lineHeight
 import org.solidhax.shiro.utils.ui.text
 import org.solidhax.shiro.utils.ui.textWidth
 import java.util.Locale
@@ -28,7 +28,7 @@ object PickaxeAbility : Module(
         text(label, 0f, 0f, CascadeGeometricColor(nameColor))
         text(status, textWidth(label), 0f, CascadeGeometricColor(if (ability.isReady) readyColor else cooldownColor))
 
-        textWidth(label) + textWidth(status) to TEXT_SIZE
+        textWidth(label) + textWidth(status) to lineHeight
     }
 
     private val EXAMPLE_ABILITY = MiningUtils.PickaxeAbility("Mining Speed Boost", 34.0)

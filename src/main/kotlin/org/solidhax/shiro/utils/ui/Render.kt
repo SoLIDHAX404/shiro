@@ -36,13 +36,36 @@ object Radius {
 
 private val svgSources = HashMap<Identifier, String>()
 
-fun GuiGraphicsExtractor.text(text: String, x: Float, y: Float, color: CascadeGeometricColor, size: Float = TEXT_SIZE) =
-    font.extract(this, text, x, y, color, shadow = false, size = size)
+class TextStyle(val size: Float = TEXT_SIZE, val shadow: Boolean = false)
 
-fun GuiGraphicsExtractor.centeredText(text: String, centerX: Float, y: Float, color: CascadeGeometricColor, size: Float = TEXT_SIZE) =
+/**
+ * The style text is drawn with when no size is given. HUD elements swap in their own while they draw.
+ */
+var textStyle: TextStyle = TextStyle()
+    private set
+
+/**
+ * The height of a line of text in the current [textStyle].
+ */
+val lineHeight: Float get() = textStyle.size
+
+fun <T> withTextStyle(style: TextStyle, block: () -> T): T {
+    val previous = textStyle
+    textStyle = style
+    try {
+        return block()
+    } finally {
+        textStyle = previous
+    }
+}
+
+fun GuiGraphicsExtractor.text(text: String, x: Float, y: Float, color: CascadeGeometricColor, size: Float = textStyle.size) =
+    font.extract(this, text, x, y, color, shadow = textStyle.shadow, size = size)
+
+fun GuiGraphicsExtractor.centeredText(text: String, centerX: Float, y: Float, color: CascadeGeometricColor, size: Float = textStyle.size) =
     text(text, centerX - textWidth(text, size) / 2f, y, color, size)
 
-fun textWidth(text: String, size: Float = TEXT_SIZE): Float = font.width(text, size)
+fun textWidth(text: String, size: Float = textStyle.size): Float = font.width(text, size)
 
 fun GuiGraphicsExtractor.icon(id: Identifier, x: Float, y: Float, size: Float, color: CascadeGeometricColor, rotation: Float = 0f) {
     // rotate on top of the current pose; an explicit pose replaces it, which would drop outer transforms like the ClickGUI open/close scale

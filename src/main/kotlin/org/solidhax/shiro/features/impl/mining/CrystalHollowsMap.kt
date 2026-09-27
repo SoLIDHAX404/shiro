@@ -30,10 +30,10 @@ import org.solidhax.shiro.utils.skyblock.LocationUtils
 import org.solidhax.shiro.utils.truncate
 import org.solidhax.shiro.utils.ui.BLACK
 import org.solidhax.shiro.utils.ui.Radius
-import org.solidhax.shiro.utils.ui.TEXT_SIZE
 import org.solidhax.shiro.utils.ui.WHITE
 import org.solidhax.shiro.utils.ui.centeredText
 import org.solidhax.shiro.utils.ui.labelSegments
+import org.solidhax.shiro.utils.ui.lineHeight
 import org.solidhax.shiro.utils.ui.withAlpha
 import org.solidhax.shiro.utils.ui.worldNameTag
 import kotlin.math.PI
@@ -69,10 +69,10 @@ object CrystalHollowsMap : Module(
         val zone = if (example) NUCLEUS_NAME else LocationUtils.subArea ?: zoneAt(position.x, position.z)
         val coordinates = "${floor(position.x).toInt()}, ${floor(position.y).toInt()}, ${floor(position.z).toInt()}"
         val zoneY = MAP_SIZE + LOCATION_GAP
-        val coordinatesY = zoneY + TEXT_SIZE + LINE_GAP
-        centeredText(zone.truncate(MAP_SIZE, TEXT_SIZE), MAP_SIZE / 2f, zoneY, CascadeGeometricColor(WHITE))
-        centeredText(coordinates.truncate(MAP_SIZE, TEXT_SIZE), MAP_SIZE / 2f, coordinatesY, CascadeGeometricColor(WHITE))
-        MAP_SIZE to coordinatesY + TEXT_SIZE
+        val coordinatesY = zoneY + lineHeight + LINE_GAP
+        centeredText(zone.truncate(MAP_SIZE, lineHeight), MAP_SIZE / 2f, zoneY, CascadeGeometricColor(WHITE))
+        centeredText(coordinates.truncate(MAP_SIZE, lineHeight), MAP_SIZE / 2f, coordinatesY, CascadeGeometricColor(WHITE))
+        MAP_SIZE to coordinatesY + lineHeight
     }
 
     init {
