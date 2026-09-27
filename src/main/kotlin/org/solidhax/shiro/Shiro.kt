@@ -21,7 +21,13 @@ import org.solidhax.shiro.features.impl.mining.LittlefootESP
 import org.solidhax.shiro.features.impl.mining.PickaxeAbility
 import org.solidhax.shiro.features.impl.mining.crystalhollows.StructureScanner
 import org.solidhax.shiro.features.impl.misc.AspectRatio
-import org.solidhax.shiro.features.impl.slayer.SlayerInfo
+import org.solidhax.shiro.features.impl.slayer.InfernoDemonlord
+import org.solidhax.shiro.features.impl.slayer.RevenantHorror
+import org.solidhax.shiro.features.impl.slayer.RiftstalkerBloodfiend
+import org.solidhax.shiro.features.impl.slayer.SlayerTracker
+import org.solidhax.shiro.features.impl.slayer.SvenPackmaster
+import org.solidhax.shiro.features.impl.slayer.TarantulaBroodfather
+import org.solidhax.shiro.features.impl.slayer.VoidgloomSeraph
 import org.solidhax.shiro.utils.render.ItemRenderer
 import org.solidhax.shiro.utils.render.RenderBatchManager
 import org.solidhax.shiro.utils.shiroId
@@ -42,7 +48,7 @@ object Shiro : ClientModInitializer {
     val configDir: File = FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile()
 
     override fun onInitializeClient() {
-        listOf(EventDispatcher, LocationUtils, TabListUtils, MiningUtils, StructureScanner, RenderBatchManager).forEach { EventBus.subscribe(it) }
+        listOf(EventDispatcher, LocationUtils, TabListUtils, MiningUtils, StructureScanner, SlayerTracker, RenderBatchManager).forEach { EventBus.subscribe(it) }
 
         ModuleManager.registerModules(
             ModuleConfig("shiro-config.json"),
@@ -50,7 +56,12 @@ object Shiro : ClientModInitializer {
             CrystalHollowsMap,
             LittlefootESP,
             PickaxeAbility,
-            SlayerInfo,
+            RevenantHorror,
+            TarantulaBroodfather,
+            SvenPackmaster,
+            VoidgloomSeraph,
+            InfernoDemonlord,
+            RiftstalkerBloodfiend,
             AspectRatio,
         )
 
