@@ -2,6 +2,7 @@ package org.solidhax.shiro.commands
 
 import com.github.stivais.commodore.Commodore
 import org.solidhax.shiro.Shiro.mc
+import org.solidhax.shiro.features.impl.general.AutoClicker
 import org.solidhax.shiro.gui.ClickGUI
 import org.solidhax.shiro.gui.HudEditor
 
@@ -12,5 +13,17 @@ val mainCommand = Commodore("shiro") {
 
     literal("hud").runs {
         mc.schedule { HudEditor.open() }
+    }
+
+    literal("autoclicker") {
+        literal("add") {
+            literal("left").runs { AutoClicker.addHeldItem("left") }
+            literal("right").runs { AutoClicker.addHeldItem("right") }
+        }
+
+        literal("remove") {
+            literal("left").runs { AutoClicker.removeHeldItem("left") }
+            literal("right").runs { AutoClicker.removeHeldItem("right") }
+        }
     }
 }

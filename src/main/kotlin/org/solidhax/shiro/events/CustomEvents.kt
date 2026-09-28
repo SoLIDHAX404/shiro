@@ -14,6 +14,7 @@ import org.solidhax.shiro.utils.skyblock.TabListUtils
 import org.solidhax.shiro.utils.skyblock.TabWidget
 
 interface TickEvent : Event {
+    object Start : TickEvent
     class End(val level: ClientLevel) : TickEvent
     object Server : TickEvent
 }

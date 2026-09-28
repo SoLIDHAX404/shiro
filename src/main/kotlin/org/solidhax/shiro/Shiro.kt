@@ -15,6 +15,7 @@ import org.solidhax.shiro.config.ModuleConfig
 import org.solidhax.shiro.events.EventDispatcher
 import org.solidhax.shiro.events.core.EventBus
 import org.solidhax.shiro.features.ModuleManager
+import org.solidhax.shiro.features.impl.general.AutoClicker
 import org.solidhax.shiro.features.impl.mining.CorpseESP
 import org.solidhax.shiro.features.impl.mining.CrystalHollowsMap
 import org.solidhax.shiro.features.impl.mining.LittlefootESP
@@ -47,6 +48,7 @@ object Shiro : ClientModInitializer {
 
         ModuleManager.registerModules(
             ModuleConfig("shiro-config.json"),
+            AutoClicker,
             CorpseESP,
             CrystalHollowsMap,
             LittlefootESP,

@@ -11,6 +11,7 @@ object EventDispatcher {
         ClientPlayConnectionEvents.JOIN.register { _, _, _ -> LevelEvent.Load.postAndCatch() }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> LevelEvent.Unload.postAndCatch() }
 
+        ClientTickEvents.START_CLIENT_TICK.register { TickEvent.Start.postAndCatch() }
         ClientTickEvents.END_LEVEL_TICK.register { level -> TickEvent.End(level).postAndCatch() }
 
         LevelRenderEvents.COLLECT_SUBMITS.register { context ->
