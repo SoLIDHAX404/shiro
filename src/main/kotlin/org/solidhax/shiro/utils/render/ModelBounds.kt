@@ -33,6 +33,14 @@ object ModelBounds {
     fun of(entity: Entity, partialTick: Float): AABB {
         val renderer = mc.entityRenderDispatcher.getRenderer(entity)
         val state = renderer.createRenderState(entity, partialTick)
+        if (state is LivingEntityRenderState) {
+            state.walkAnimationPos = 0f
+            state.walkAnimationSpeed = 0f
+            state.yRot = 0f
+            state.xRot = 0f
+            state.ageInTicks = 0f
+            state.deathTime = 0f
+        }
         return of(renderer, state)?.move(state.x, state.y, state.z) ?: entity.boundingBox.inflate(0.0, VERTICAL_PADDING, 0.0)
     }
 

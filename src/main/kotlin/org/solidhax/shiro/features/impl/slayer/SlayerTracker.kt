@@ -8,17 +8,15 @@ import org.solidhax.shiro.Shiro.mc
 import org.solidhax.shiro.events.LevelEvent
 import org.solidhax.shiro.events.TickEvent
 import org.solidhax.shiro.events.core.on
-import org.solidhax.shiro.features.ModuleManager
 import org.solidhax.shiro.utils.strippedName
 
-class SlayerInfo(
+class SlayerData(
     val type: SlayerType,
     val tier: String?,
     var timer: String? = null,
     var hits: Int? = null,
     var health: String? = null,
     var vehicleTicks: Int? = null,
-    var killTime: Double? = null,
     var maxHealth: Double? = null,
 ) {
     val healthFraction: Float?
@@ -39,13 +37,9 @@ fun parseHealth(text: String): Double? {
     }
 }
 
-class Slayer(val entity: LivingEntity, val owned: Boolean, val info: SlayerInfo) {
+class Slayer(val entity: LivingEntity, val owned: Boolean, val info: SlayerData) {
 
     val type: SlayerType get() = info.type
-
-    val isDead: Boolean get() = info.killTime != null
-
-    internal var deadTicks = 0
 
     internal val standIds: IntRange get() = entity.id + 1..entity.id + 3
 
@@ -86,7 +80,7 @@ object SlayerTracker {
 
     init {
         on<TickEvent.End> {
-            if (ModuleManager.modules.values.none { it is SlayerModule && it.enabled }) {
+            if (!SlayerInfo.enabled) {
                 clear()
                 return@on
             }
@@ -100,15 +94,7 @@ object SlayerTracker {
             val iterator = slayers.values.iterator()
             while (iterator.hasNext()) {
                 val slayer = iterator.next()
-                if (slayer.isDead) {
-                    if (++slayer.deadTicks > KILL_TIME_TICKS) iterator.remove()
-                    continue
-                }
-                if (slayer.entity.isDeadOrDying) {
-                    slayer.info.killTime = slayer.entity.tickCount / 20.0
-                    continue
-                }
-                if (slayer.entity.isRemoved) {
+                if (slayer.entity.isDeadOrDying || slayer.entity.isRemoved) {
                     iterator.remove()
                     continue
                 }
@@ -138,10 +124,8 @@ object SlayerTracker {
         val owner = level.getEntity(nameStand.id + 2)?.strippedName ?: return
         if (!owner.startsWith(OWNER_PREFIX)) return
 
-        slayers[entity] = Slayer(entity, owner.removePrefix(OWNER_PREFIX).trim() == playerName, SlayerInfo(type, type.tierOf(name)))
+        slayers[entity] = Slayer(entity, owner.removePrefix(OWNER_PREFIX).trim() == playerName, SlayerData(type, type.tierOf(name)))
     }
-
-    private const val KILL_TIME_TICKS = 100
 }
 
 private const val OWNER_PREFIX = "Spawned by:"
